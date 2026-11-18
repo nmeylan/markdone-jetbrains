@@ -439,6 +439,38 @@
     white-space: pre-wrap;
     text-align: left;
   }
+  .md-drawio {
+    display: block;
+    margin: 0.5em 0;
+    border: 1px solid var(--md-border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .md-drawio-header {
+    padding: 2px 8px;
+    border-bottom: 1px solid var(--md-border);
+    font-family: var(--md-font-mono);
+    font-size: 0.8em;
+    color: var(--md-muted);
+    cursor: pointer;
+  }
+  .md-drawio-frame {
+    display: block;
+    width: 100%;
+    border: 0;
+    /* The frame document is light: a different color-scheme would paint it opaque over the dark page. */
+    color-scheme: light;
+  }
+  .md-drawio-message {
+    padding: 0.5em 8px;
+    font-family: var(--md-font-mono);
+    font-size: 0.9em;
+    color: var(--md-muted);
+    white-space: pre-wrap;
+  }
+  .md-drawio-error {
+    color: var(--md-error);
+  }
   .hljs-keyword,
   .hljs-built_in,
   .hljs-selector-tag {

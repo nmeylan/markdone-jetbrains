@@ -34,6 +34,12 @@ import com.intellij.openapi.project.VetoableProjectManagerListener
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.ui.JBColor
 import ch.nmeylan.markdone.actions.PageSelection
 import ch.nmeylan.markdone.actions.PageTable
@@ -50,7 +56,9 @@ import ch.nmeylan.markdone.sync.DocumentSync
 import ch.nmeylan.markdone.sync.LinkKind
 import ch.nmeylan.markdone.sync.PageMessage
 import ch.nmeylan.markdone.sync.WebView
+import java.io.IOException
 import java.net.URI
+import java.nio.file.InvalidPathException
 import java.nio.file.Path
 import java.security.SecureRandom
 import java.util.HexFormat
@@ -131,6 +139,9 @@ class SharedBrowserService : Disposable {
         val sources = ConcurrentHashMap<String, AssetRequestHandler.DocSource>()
         val projects = ConcurrentHashMap<String, AssetRequestHandler.ProjectSource>()
 
+        // The .drawio files that this page loaded (nmey/DRAWIO.md §5.5): a change of one of them sends `fileChanged`.
+        val drawioServed = DrawioServed()
+
         // Before `ready` the page cannot receive messages; `ready` (re)sends everything.
         val view = object : WebView {
             override fun send(message: JsonObject) {
@@ -165,11 +176,14 @@ class SharedBrowserService : Disposable {
         // IDE theme follow (protocol 2.3): look-and-feel, color scheme, editor font (its apply switches the scheme).
         connection.subscribe(LafManagerListener.TOPIC, LafManagerListener { themeChanged() })
         connection.subscribe(EditorColorsManager.TOPIC, EditorColorsListener { themeChanged() })
+        connection.subscribe(VirtualFileManager.VFS_CHANGES, object : BulkFileListener {
+            override fun after(events: List<VFileEvent>) = this@SharedBrowserService.drawioEvents(events)
+        })
         connection.subscribe(FileDocumentManagerListener.TOPIC, object : FileDocumentManagerListener {
             override fun beforeDocumentSaving(document: Document) = this@SharedBrowserService.beforeDocumentSaving(document)
         })
         val veto = object : VetoableProjectManagerListener {
-            override fun canClose(project: Project) = canCloseProject(project)
+            override fun canClose(project: Project) = this@SharedBrowserService.canCloseProject(project)
         }
         ProjectManager.getInstance().addProjectManagerListener(veto)
         Disposer.register(this) { ProjectManager.getInstance().removeProjectManagerListener(veto) }
@@ -284,6 +298,7 @@ class SharedBrowserService : Disposable {
                     session.syncs.remove(doc.docId)
                     session.viewports.remove(doc.docId)
                     session.sources.remove(doc.docId)
+                    session.drawioServed.forget(doc.docId)
                     sync.close()
                     Disposer.dispose(sync)
                     // The last document of its project in this page: the token goes (no reference to a closed project).
@@ -503,6 +518,8 @@ class SharedBrowserService : Disposable {
             addProperty("mermaid", settings.mermaid)
             addProperty("highlight", settings.highlight)
             addProperty("softBreaks", settings.softBreaks)
+            addProperty("drawio", settings.drawio)
+            addProperty("drawioPattern", settings.drawioPattern)
             addProperty("style", settings.style.id)
             addProperty("colorTheme", settings.colorTheme.id)
             addProperty("doubleClickEdit", settings.doubleClickEdit)
@@ -517,6 +534,52 @@ class SharedBrowserService : Disposable {
                     })
                 }
             })
+        }
+    }
+
+    /**
+     * Content, creation or deletion of `.drawio` files: the real paths are resolved off the EDT, then
+     * [drawioFilesChanged] runs. Nothing happens without a page.
+     */
+    private fun drawioEvents(events: List<VFileEvent>) {
+        if (sessions.isEmpty()) return
+        val paths = events.filter { it is VFileContentChangeEvent || it is VFileCreateEvent || it is VFileDeleteEvent }
+            .map { it.path }.filter { AssetRequestHandler.isDrawioName(it.substringAfterLast('/')) }
+        if (paths.isEmpty()) return
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val files = paths.mapNotNull(::realPath)
+            if (files.isNotEmpty()) runOnEdt { drawioFilesChanged(files) }
+        }
+    }
+
+    /** The real path of [path]; for a file that is gone, the real path of its directory plus its name. */
+    private fun realPath(path: String): Path? = try {
+        val p = Path.of(path)
+        try {
+            p.toRealPath()
+        } catch (_: IOException) {
+            p.parent.toRealPath().resolve(p.fileName)
+        }
+    } catch (_: IOException) {
+        null
+    } catch (_: InvalidPathException) {
+        null
+    }
+
+    /** [files] (real paths) changed: each page that loaded one of them tells the matching documents (`fileChanged`, protocol 2.7). */
+    internal fun drawioFilesChanged(files: List<Path>) {
+        for (session in sessions) {
+            for (docId in session.syncs.keys.toList()) {
+                for (file in files) {
+                    for (path in session.drawioServed.pathsFor(docId, file)) {
+                        session.view.send(JsonObject().apply {
+                            addProperty("type", "fileChanged")
+                            addProperty("docId", docId)
+                            addProperty("path", path)
+                        })
+                    }
+                }
+            }
         }
     }
 
@@ -642,7 +705,7 @@ class SharedBrowserService : Disposable {
         val isCurrent = { created != null && session.page === created && session in sessions }
         session.remoteImages = remoteImagesSetting()
         created = factory.create(
-            AssetRequestHandler({ session.sources[it] }, { session.remoteImages }, { session.projects[it] }),
+            AssetRequestHandler({ session.sources[it] }, { session.remoteImages }, { session.projects[it] }, session.drawioServed::add),
             { message -> runOnEdt { if (isCurrent()) receive(session, message) } },
             { runOnEdt { if (isCurrent()) recover(session) } },
         )
@@ -698,6 +761,7 @@ class SharedBrowserService : Disposable {
         session.syncs.clear()
         syncs.forEach { Disposer.dispose(it) }
         session.sources.clear()
+        session.drawioServed.clear()
         session.projectTokens.clear()
         session.projects.clear()
         session.page?.let {

@@ -151,4 +151,97 @@ class AssetRequestHandlerTest : BasePlatformTestCase() {
         assertTrue(AssetRequestHandler.cancels("POST", "$origin/doc/$docId"))
         assertTrue(AssetRequestHandler.cancels("PUT", "$origin/app/index.html"))
     }
+
+    fun testDrawioFilesFollowTheFileRulesAndHaveTheirOwnHeaders() {
+        val docs = root.resolve("docs")
+        Files.writeString(docs.resolve("a.drawio"), "<mxfile/>")
+        Files.writeString(docs.resolve("B.DRAWIO.XML"), "<mxfile/>")
+        Files.writeString(docs.resolve("my diagram.drawio"), "<mxfile/>")
+        Files.writeString(root.resolve("top.drawio"), "<mxfile/>")
+        for (path in listOf("a.drawio", "B.DRAWIO.XML", "my%20diagram.drawio", "./a.drawio", "../docs/a.drawio")) {
+            val response = handler.respond("$origin/drawio/$docId/$path")
+            assertEquals(path, 200, response.status)
+            assertEquals(path, "text/plain", response.mime)
+            assertEquals(path, "<mxfile/>", response.body.toString(Charsets.UTF_8))
+            assertEquals(path, "no-store", response.headers["Cache-Control"])
+            assertEquals(path, "nosniff", response.headers["X-Content-Type-Options"])
+            assertEquals(path, "default-src 'none'; sandbox", response.headers["Content-Security-Policy"])
+        }
+    }
+
+    fun testDrawioRefusesOtherFilesPathsAndDocuments() {
+        Files.writeString(root.resolve("secret.drawio"), "<mxfile/>")
+        Files.writeString(root.resolve("docs/a.drawio.txt"), "x")
+        Files.writeString(root.resolve("docs/drawio"), "x")
+        for (path in listOf(
+            "/drawio/$docId/doc.md", "/drawio/$docId/img.png", "/drawio/$docId/a.drawio.txt", "/drawio/$docId/drawio",
+            "/drawio/$docId/missing.drawio", "/drawio/$docId/..%2F..%2Fsecret.drawio", "/drawio/$docId/%2Fetc%2Fpasswd.drawio",
+            "/drawio/$docId/../secret.drawio", "/drawio/$docId/..%2Ftop.drawio", "/drawio/$docId", "/drawio/", "/drawio/ffffffffffffffffffffffffffffffff/a.drawio",
+        )) {
+            assertEquals(path, 404, handler.respond(origin + path).status)
+        }
+        // /file/ stays as it was: it does not need the extension, and /drawio/ is separate.
+        assertEquals(200, handler.respond("$origin/file/$docId/a.drawio.txt").status)
+    }
+
+    fun testDrawioLimitsTheSize() {
+        val limit = AssetRequestHandler.MAX_DRAWIO_BYTES.toInt()
+        Files.write(root.resolve("docs/ok.drawio"), ByteArray(limit) { 'a'.code.toByte() })
+        Files.write(root.resolve("docs/big.drawio"), ByteArray(limit + 1) { 'a'.code.toByte() })
+        assertEquals(200, handler.respond("$origin/drawio/$docId/ok.drawio").status)
+        val big = handler.respond("$origin/drawio/$docId/big.drawio")
+        assertEquals(413, big.status)
+        assertEquals(0, big.body.size)
+    }
+
+    fun testDrawioDoesNotFollowASymlinkToAnotherFileType() {
+        val link = root.resolve("docs/link.drawio")
+        try {
+            Files.createSymbolicLink(link, root.resolve("secret.txt"))
+        } catch (_: UnsupportedOperationException) {
+            return
+        }
+        assertEquals(404, handler.respond("$origin/drawio/$docId/link.drawio").status)
+    }
+
+    fun testFrameCspIsOnTheFrameDocumentOnly() {
+        val protocol = Files.readString(Path.of("protocol/PROTOCOL.md")).substringAfter("## Draw.io frame content security")
+        val expected = protocol.substringAfter("```\n").substringBefore("\n```").lines().joinToString(" ") { it.trim() }
+        assertEquals(expected, AssetRequestHandler.FRAME_CSP)
+        val frame = handler.respond("$origin/app/drawio/viewer.html")
+        assertEquals(200, frame.status)
+        assertEquals("text/html", frame.mime)
+        assertEquals(AssetRequestHandler.FRAME_CSP, frame.headers["Content-Security-Policy"])
+        assertFalse(AssetRequestHandler.FRAME_CSP.contains("unsafe-eval"))
+        assertTrue(AssetRequestHandler.FRAME_CSP.contains("sandbox allow-scripts"))
+        for (name in listOf("frame.js", "viewer-static.min.js")) {
+            val script = handler.respond("$origin/app/drawio/$name")
+            assertEquals(name, 200, script.status)
+            assertEquals(name, "text/javascript", script.mime)
+            assertEquals(name, "default-src 'none'; sandbox", script.headers["Content-Security-Policy"])
+        }
+        assertEquals(AssetRequestHandler.CSP, handler.respond("$origin/app/index.html").headers["Content-Security-Policy"])
+    }
+
+    fun testPageCspAllowsOnlyTheDrawioFrameDocumentAndFiles() {
+        val csp = AssetRequestHandler.CSP
+        assertTrue(csp.contains("frame-src https://markdone.local/app/drawio/viewer.html;"))
+        assertTrue(csp.contains("connect-src https://markdone.local/doc/ https://markdone.local/drawio/;"))
+        assertFalse(csp.contains("unsafe-eval"))
+    }
+
+    fun testOnlyTheDrawioFrameDocumentMayNavigateAsSubFrame() {
+        val frameUrl = AssetRequestHandler.DRAWIO_FRAME_URL
+        assertEquals("$origin/app/drawio/viewer.html", frameUrl)
+        assertTrue(SecurityHandlers.allowsDrawioFrame(false, false, frameUrl))
+        assertFalse("main frame", SecurityHandlers.allowsDrawioFrame(true, false, frameUrl))
+        assertFalse("no frame", SecurityHandlers.allowsDrawioFrame(null, false, frameUrl))
+        assertFalse("redirect", SecurityHandlers.allowsDrawioFrame(false, true, frameUrl))
+        for (url in listOf(
+            "$frameUrl?x=1", "$frameUrl#x", "$origin/app/index.html", "$origin/app/drawio/frame.js", "$origin/app/drawio/",
+            "https://example.com/app/drawio/viewer.html", "javascript:1", "about:blank", "",
+        )) {
+            assertFalse(url, SecurityHandlers.allowsDrawioFrame(false, false, url))
+        }
+    }
 }

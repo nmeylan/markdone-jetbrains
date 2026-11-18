@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
 import { validateIdeMessage } from '../../src/protocol';
@@ -20,11 +23,11 @@ describe('validateIdeMessage (protocol v2.4)', () => {
     { type: 'writable', docId: id, writable: false },
     { type: 'theme', dark: true, fontFamily: 'Inter', fontSizePx: 13, zoom: 1 },
     { type: 'css', global: '', project: null },
-    { type: 'settings', remoteImages: true, math: true, mermaid: false, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
-    { type: 'settings', remoteImages: false, math: false, mermaid: true, highlight: false, softBreaks: true, style: 'compact', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
-    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'serif', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
-    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: true, colorTheme: 'ide', vimrc: [{ mode: 'operator', remap: true, lhs: '<Space>a', rhs: ':w<CR>' }] },
-    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'tokyo-storm', vimrc: [] },
+    { type: 'settings', remoteImages: true, math: true, mermaid: false, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
+    { type: 'settings', remoteImages: false, math: false, mermaid: true, highlight: false, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'compact', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
+    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'serif', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
+    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: true, colorTheme: 'ide', vimrc: [{ mode: 'operator', remap: true, lhs: '<Space>a', rhs: ':w<CR>' }] },
+    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'tokyo-storm', vimrc: [] },
   ])('accepts $type', (msg) => {
     expect(validateIdeMessage(msg)).toBe(msg);
   });
@@ -66,19 +69,43 @@ describe('validateIdeMessage (protocol v2.4)', () => {
     { type: 'activate', docId: id, top: 0, scroll: 0 },
     // Settings (2.3): all five fields, exact key set, known style names only.
     { type: 'settings', remoteImages: true },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: true, colorTheme: 'ide', vimrc: [{ mode: 'normal', remap: false, lhs: 'a' }] },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: true, colorTheme: 'ide', vimrc: [{ mode: 'x', remap: false, lhs: 'a', rhs: 'b' }] },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: true, colorTheme: 'ide', vimrc: [{ mode: 'normal', remap: false, lhs: 'a' }] },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: true, colorTheme: 'ide', vimrc: [{ mode: 'x', remap: false, lhs: 'a', rhs: 'b' }] },
     { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', zoom: 1 },
-    { type: 'settings', remoteImages: true, math: 'yes', mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: 1, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'Compact' },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'dark' },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: null },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'toString' },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'solarized', vimrc: [] },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, vimrc: [] },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', zoom: 1 },
+    { type: 'settings', remoteImages: true, math: 'yes', mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: 1, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'Compact' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'dark' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: null },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'toString' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'solarized', vimrc: [] },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: false, vimrc: [] },
   ])('rejects %j', (msg) => {
     expect(validateIdeMessage(msg)).toBeNull();
+  });
+});
+
+describe('draw.io messages (protocol v2.7, protocol/fixtures/messages/drawio.json)', () => {
+  const fixture = JSON.parse(readFileSync(fileURLToPath(new URL('../../../protocol/fixtures/messages/drawio.json', import.meta.url)), 'utf8')) as {
+    settings: Record<string, unknown>;
+    fileChanged: Record<string, unknown>;
+    invalid: unknown[];
+  };
+
+  it('accepts the settings and the fileChanged of the fixture', () => {
+    expect(validateIdeMessage(fixture.settings)).toBe(fixture.settings);
+    expect(validateIdeMessage(fixture.fileChanged)).toBe(fixture.fileChanged);
+  });
+
+  it.each(fixture.invalid.map((m, i) => [i, m] as const))('rejects invalid message %i of the fixture', (_, msg) => {
+    expect(validateIdeMessage(msg)).toBeNull();
+  });
+
+  it('limits the pattern to 100 characters and the path to 1000', () => {
+    expect(validateIdeMessage({ ...fixture.settings, drawioPattern: 'x'.repeat(100) })).not.toBeNull();
+    expect(validateIdeMessage({ ...fixture.settings, drawioPattern: 'x'.repeat(101) })).toBeNull();
+    expect(validateIdeMessage({ ...fixture.fileChanged, path: 'x'.repeat(1000) })).not.toBeNull();
+    expect(validateIdeMessage({ ...fixture.fileChanged, path: 'x'.repeat(1001) })).toBeNull();
   });
 });

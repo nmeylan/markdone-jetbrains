@@ -28,6 +28,7 @@ I wanted one tab where I edit the formatted text directly, that stays fast on a 
 - Find in the page (`Ctrl+F`), styled like the IDE find bar
 - Read-only files open read-only in Edit mode; their tab is gray
 - Vim key bindings in Edit mode (setting, off by default): CodeMirror's Vim emulation, not IdeaVim; it uses the `map` commands and `let mapleader` of your `.ideavimrc`, and reports the lines it skips
+- File Path in `inline code` are rendered as link if they are valid file path, you can ctrl+click to open it in an IDE tab
 
 **Rendering**
 - Headings, emphasis, strike, inline code, links, quotes, lists, task lists, rules, footnotes, front matter

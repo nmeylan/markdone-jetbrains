@@ -194,6 +194,28 @@ test('typing latency with heavy blocks on screen: math-heavy, mermaid-heavy, cod
   });
 });
 
+// Typing next to draw.io frames: the viewer (9 MB) parses in the page's renderer; frames boot one at a time in idle time.
+test('draw.io: first render and typing latency with 10 diagrams (drawioFirstRenderMs, web* measures)', async ({ page, guard }) => {
+  void guard;
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1000, height: 1400 });
+  const text = `Intro\n\n${Array.from({ length: 10 }, (_, i) => `Text ${i}\n\ndrawio:drawio/basic.drawio\n`).join('\n')}\nEnd\n`;
+  await gotoHarness(page);
+  const t0 = await page.evaluate(() => performance.now());
+  await openDoc(page, 't', text);
+  // The body keeps its min-height until the frame sent its first `size`.
+  await page.waitForFunction(() => Array.from(document.querySelectorAll<HTMLElement>('.md-drawio-body')).some((b) => b.querySelector('iframe') && b.style.minHeight === ''), null, { timeout: 60_000, polling: 'raf' });
+  const first = round((await page.evaluate(() => performance.now())) - t0);
+  const ready = () => page.waitForFunction(() => document.querySelectorAll('.md-drawio-frame').length >= 5, null, { timeout: 120_000, polling: 'raf' }).then(() => undefined);
+  const d = await typing(page, text, text.indexOf('Text 4'), ready);
+  console.log(`draw.io first render ${first} ms; typing next to frames ${JSON.stringify(d)}`);
+  mergeReport('perf.json', {
+    drawioFirstRenderMs: first,
+    webKeystrokeProcessingDrawioHeavyMs: d.processing.p95,
+    webKeystrokeToFrameDrawioHeavyMs: d.toFrame.p95,
+  });
+});
+
 test('tab switch: activate -> activated (first paint), p95 over 20 swaps medium/large', async ({ page, guard }) => {
   void guard;
   test.setTimeout(120_000);

@@ -1,4 +1,4 @@
-# IDE ↔ page protocol (version 2.6)
+# IDE ↔ page protocol (version 2.7)
 
 Owner: orchestrator. Both sides implement this contract. A change needs a human checkpoint
 (PLAN.md §8.7 item 4). Fixtures in `protocol/fixtures/*.json` replay these messages on both
@@ -13,6 +13,8 @@ exact changes in both directions, one IDE undo stack, IDE context menu).
 | `https://markdone.local/app/<path>` | same | Bundle assets from jar `web/<path>` (Vite `base: './'`). |
 | `https://markdone.local/doc/<docId>` | same | Document text, UTF-8, `\n` line ends, BOM kept. Header `X-Markdone-Stamp: <long>` = the document **version** (see "Versions") read together with the text (required). Read under a read action off the CEF IO thread. |
 | `https://markdone.local/file/<docId>/<relative path>` | same | Local file relative to the `.md` file's directory (PLAN.md §6.2 path rules). |
+| `https://markdone.local/app/drawio/viewer.html` | same | The draw.io frame document (protocol 2.7): the only sub-frame of the page. **Frame CSP response header** (see "Draw.io frame content security"). `/app/drawio/*.js` and the other files of that folder are normal `/app/` files. |
+| `https://markdone.local/drawio/<docId>/<relative path>` | same | A `.drawio` or `.drawio.xml` file (extension checked on the resolved file, any case), same path rules and roots as `/file/`. At most 5 MB (413 above), `Content-Type: text/plain`, `Cache-Control: no-store`, sandbox CSP. A separate prefix: the page `connect-src` does not reach `/file/`. |
 | `https://markdone.local/proj/<projectToken>/<path>` | same | Asset referenced by project CSS, relative to the **project CSS file**, served only from the project content roots (same path rules). `<projectToken>` = opaque random token per open project in this page (protocol 2.2). |
 
 `<docId>` is an opaque random token (32 hex chars) per open `Document` in the IDE (not a path).
@@ -27,10 +29,32 @@ script-src https://markdone.local/app/;
 style-src https://markdone.local/app/ 'unsafe-inline';
 img-src https://markdone.local/ data:;
 font-src https://markdone.local/app/ https://markdone.local/file/ https://markdone.local/proj/;
-connect-src https://markdone.local/doc/;
+connect-src https://markdone.local/doc/ https://markdone.local/drawio/;
+frame-src https://markdone.local/app/drawio/viewer.html;
 base-uri 'none';
 form-action 'none';
 ```
+
+## Draw.io frame content security
+
+CSP of `https://markdone.local/app/drawio/viewer.html` (response header; the lines joined with one space). The
+frame runs the vendored draw.io viewer in an opaque origin (`sandbox allow-scripts`, no `allow-same-origin`):
+
+```
+default-src 'none';
+script-src https://markdone.local/app/drawio/;
+style-src https://markdone.local/app/drawio/ 'unsafe-inline';
+img-src https://markdone.local/app/drawio/ data:;
+font-src https://markdone.local/app/drawio/;
+connect-src https://markdone.local/app/drawio/;
+base-uri 'none';
+form-action 'none';
+sandbox allow-scripts;
+```
+
+The IDE allows the load of that exact URL as a sub-frame (not a redirect) and blocks every other sub-frame
+navigation. Bridge calls (`cefQuery` of the message routers) are accepted from the main frame of the page only:
+the frame can find the functions, and the IDE rejects its calls before it parses them.
 
 ## Versions (protocol 2.1)
 
@@ -133,11 +157,14 @@ Through `command`:
 { type: "flush",    docId: string, seq: number }         // reply: patch with that seq (pending changes or [])
 { type: "writable", docId: string, writable: boolean }
 { type: "paths",    docId: string, exist: string[], missing: string[] }  // 2.6: answer to `pathsExist` (each ≤ 16)
+{ type: "fileChanged", docId: string, path: string }  // 2.7: a .drawio file that the page loaded changed on disk; path = as the page requested it (1..1000 chars)
 { type: "theme",    dark: boolean, fontFamily: string, fontSizePx: number, zoom: number }
 { type: "css",      global: string, project: string | null }   // M2
 { type: "settings", remoteImages: boolean,                        // M2 (default false)
                     math: boolean, mermaid: boolean, highlight: boolean,  // M5 feature toggles (default true)
                     softBreaks: boolean,                                  // single line feed: line break (true, default) or space
+                    drawio: boolean,                                      // 2.7: render draw.io diagrams (default true)
+                    drawioPattern: string,                                // 2.7: template of the `drawio:` line, 1..100 chars (default "drawio:{path}#{page}")
                     style: "default" | "compact" | "serif",               // M5 built-in style (default "default")
                     doubleClickEdit: boolean,                             // 2.5: editable only after a double-click (default false)
                     vim: boolean,                                         // 2.5: Vim key bindings (default false)
@@ -260,6 +287,24 @@ clear them, `activate` clears the `missing` ones.
   theme (`theme.dark`). The other values set their own palette, light or dark, whatever the IDE
   theme is. An unknown value makes the whole message invalid.
 - The Tokyo Night palettes are ported from https://github.com/tcmmichaelb139/obsidian-tokyonight (MIT).
+
+## Draw.io diagrams (protocol 2.7)
+
+The page shows a `.drawio` or `.drawio.xml` file of the project as a diagram (view only) in a sandboxed frame
+(`https://markdone.local/app/drawio/viewer.html`, vendored draw.io viewer; nmey/DRAWIO.md).
+
+- References, relative to the `.md` file's directory (the path rules of images): an image or a link alone in its
+  paragraph (`![Arch](docs/arch.drawio#Backend)`), or a paragraph of one line that matches the template
+  `settings.drawioPattern` (default `drawio:{path}#{page}`). The page is the `name` of a `<diagram>`; without it
+  all pages show with page tabs. The template has one `{path}`, at most one `{page}` after it; the separator between
+  them (no white space, `)` or `]`) also splits the target of the image and link forms. An invalid template falls
+  back to the default. `drawio` false shows the references as normal Markdown.
+- The page fetches `/drawio/<docId>/<path>` (one percent-encoded path component), selects the page in the XML, and
+  posts it to the frame. The frame answers with its height or an error. Only messages from that frame (opaque
+  origin `null`) with the exact schema count.
+- `fileChanged`: the IDE keeps, per document of a page, the paths served by `/drawio/` (at most 256) and the real
+  file of each. When a `.drawio` file is created, deleted or changed on disk, it sends `fileChanged` for each
+  matching path; the page fetches the file again and rebuilds the matching widgets.
 
 ## Mode switch sync (protocol 2.4)
 

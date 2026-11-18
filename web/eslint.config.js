@@ -3,7 +3,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['node_modules/', 'dist/', 'dist-harness/'] },
+  { ignores: ['node_modules/', 'dist/', 'dist-harness/', 'vendor/'] },
   js.configs.recommended,
   ...tseslint.configs.strict,
   {
@@ -14,5 +14,10 @@ export default tseslint.config(
       'no-implied-eval': 'error',
       'no-new-func': 'error',
     },
+  },
+  {
+    // The draw.io frame script runs before and next to the vendored viewer, which defines these globals.
+    files: ['src/drawio-frame/frame.js'],
+    languageOptions: { globals: { mxUtils: 'readonly', GraphViewer: 'readonly' } },
   },
 );

@@ -18,7 +18,6 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.fileEditor.TextEditorWithPreview
-import com.intellij.openapi.fileEditor.impl.text.AsyncEditorLoader
 import com.intellij.openapi.fileTypes.PlainSyntaxHighlighter
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.vfs.VirtualFile
@@ -81,12 +80,15 @@ class MdEditor(textEditor: TextEditor, private val web: WebEditor) :
             if (e.propertyName == EditorEx.PROP_HIGHLIGHTER && plainHighlighter != null && e.newValue !== plainHighlighter) {
                 installPlainHighlighter(textEditor.editor as EditorEx)
             }
+            // A big file sets its highlighter when the async load ends.
+            if (e.propertyName == EditorEx.PROP_HIGHLIGHTER && !disposed) updateBanner()
         }, this)
         /*
          * The platform does not update the banners of this editor while the text editor loads, and after the load
-         * it updates them only for the text editor. So update the banner here (on the EDT; at once when loaded).
+         * it updates them only for the text editor. So update the banner here: after the construction, and when
+         * the load ends (the highlighter change above).
          */
-        AsyncEditorLoader.performWhenLoaded(textEditor.editor) { if (!disposed) updateBanner() }
+        ApplicationManager.getApplication().invokeLater({ if (!disposed) updateBanner() }, ModalityState.any())
     }
 
     /** The file is larger than the large-file limit: no switch to Edit mode. */

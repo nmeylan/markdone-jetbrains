@@ -11,13 +11,28 @@ export const CSP = [
   "style-src https://markdone.local/app/ 'unsafe-inline'",
   'img-src https://markdone.local/ data:',
   'font-src https://markdone.local/app/ https://markdone.local/file/ https://markdone.local/proj/',
-  'connect-src https://markdone.local/doc/',
+  'connect-src https://markdone.local/doc/ https://markdone.local/drawio/',
+  'frame-src https://markdone.local/app/drawio/viewer.html',
   "base-uri 'none'",
   "form-action 'none'",
 ].join('; ');
 
+/** CSP of /app/drawio/viewer.html (PROTOCOL.md "Draw.io frame content security"). */
+export const FRAME_CSP = [
+  "default-src 'none'",
+  'script-src https://markdone.local/app/drawio/',
+  "style-src https://markdone.local/app/drawio/ 'unsafe-inline'",
+  'img-src https://markdone.local/app/drawio/ data:',
+  'font-src https://markdone.local/app/drawio/',
+  'connect-src https://markdone.local/app/drawio/',
+  "base-uri 'none'",
+  "form-action 'none'",
+  'sandbox allow-scripts',
+].join('; ');
+
 export const DIST = fileURLToPath(new URL('../../dist-harness/', import.meta.url));
 export const CORPUS = fileURLToPath(new URL('../../../src/test/resources/corpus/', import.meta.url));
+const ASSETS = fileURLToPath(new URL('./assets/', import.meta.url));
 const LOGO = { body: readFileSync(fileURLToPath(new URL('./assets/logo.png', import.meta.url))), type: 'image/png' };
 
 export const REPORTS = fileURLToPath(new URL('../../../build/reports/', import.meta.url));
@@ -73,6 +88,10 @@ interface Guard {
   files: Map<string, { body: Buffer; type: string }>;
   /** Every /file/ request (path after /file/), in order. */
   fileRequests: string[];
+  /** Files served at /drawio/<docId>/<path> instead of `assets/` (key: `<docId>/<decoded path>`); `status` 413 and 404 are answered as the IDE does. */
+  drawio: Map<string, { body: string; status?: number }>;
+  /** Every /drawio/ request (`<docId>/<decoded path>`), in order. */
+  drawioRequests: string[];
   /** Expected CSP violations (`<directive> <blocked URI>`): removed from the check. */
   expectedViolations: string[];
 }
@@ -87,6 +106,8 @@ export const test = base.extend<{ guard: Guard }>({
     const docs = new Map<string, { text: string; stamp: number | string | null }>();
     const files = new Map<string, { body: Buffer; type: string }>();
     const fileRequests: string[] = [];
+    const drawio = new Map<string, { body: string; status?: number }>();
+    const drawioRequests: string[] = [];
     const expectedViolations: string[] = [];
     await page.addInitScript(() => {
       const w = window as unknown as { __cspViolations: string[] };
@@ -100,11 +121,24 @@ export const test = base.extend<{ guard: Guard }>({
       if (url.origin === ORIGIN && url.pathname.startsWith('/app/')) {
         const file = join(DIST, decodeURIComponent(url.pathname.slice('/app/'.length)));
         if (!file.startsWith(DIST) || !existsSync(file)) return route.fulfill({ status: 404 });
+        // The draw.io frame document has its own CSP (PROTOCOL.md "Draw.io frame content security").
+        const csp = url.pathname === '/app/drawio/viewer.html' ? FRAME_CSP : CSP;
         return route.fulfill({
           status: 200,
-          headers: { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream', 'Content-Security-Policy': CSP },
+          headers: { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream', 'Content-Security-Policy': csp },
           body: readFileSync(file),
         });
+      }
+      if (url.origin === ORIGIN && url.pathname.startsWith('/drawio/')) {
+        // Diagram files (PROTOCOL.md): `.drawio` and `.drawio.xml` only, text/plain, never cached.
+        const rest = decodeURIComponent(url.pathname.slice('/drawio/'.length));
+        drawioRequests.push(rest);
+        const headers = { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' };
+        const set = drawio.get(rest);
+        if (set) return route.fulfill({ status: set.status ?? 200, headers, body: set.body });
+        const file = join(ASSETS, rest.slice(rest.indexOf('/') + 1));
+        if (!/\.drawio(\.xml)?$/i.test(file) || !file.startsWith(ASSETS) || !existsSync(file)) return route.fulfill({ status: 404 });
+        return route.fulfill({ status: 200, headers, body: readFileSync(file) });
       }
       if (url.origin === ORIGIN && url.pathname.startsWith('/doc/')) {
         const id = decodeURIComponent(url.pathname.slice('/doc/'.length));
@@ -126,7 +160,7 @@ export const test = base.extend<{ guard: Guard }>({
       outside.push(url.href);
       return route.abort();
     });
-    await use({ docs, files, fileRequests, expectedViolations });
+    await use({ docs, files, fileRequests, drawio, drawioRequests, expectedViolations });
     const violations = await page
       .evaluate(() => (window as unknown as { __cspViolations?: string[] }).__cspViolations ?? [])
       .catch(() => [] as string[]);

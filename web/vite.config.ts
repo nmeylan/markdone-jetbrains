@@ -1,7 +1,23 @@
+import { cpSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
+import { type Plugin, defineConfig } from 'vite';
 
 const page = fileURLToPath(new URL('./index.html', import.meta.url));
+
+/**
+ * Copies the draw.io frame (nmey/DRAWIO.md §4.1) to `<outDir>/drawio/` as it is: the vendored viewer (8.9 MB, with
+ * VERSION and the licenses) and `src/drawio-frame/` (`viewer.html`, `frame.js`). They are plain files, not bundled.
+ */
+function drawioFrame(): Plugin {
+  return {
+    name: 'markdone-drawio-frame',
+    writeBundle(options) {
+      const out = `${options.dir}/drawio`;
+      cpSync(fileURLToPath(new URL('./vendor/drawio', import.meta.url)), out, { recursive: true });
+      cpSync(fileURLToPath(new URL('./src/drawio-frame', import.meta.url)), out, { recursive: true });
+    },
+  };
+}
 
 /*
  * Default mode: the bundle goes straight into the Gradle generated resources directory. Gradle
@@ -16,6 +32,7 @@ export default defineConfig(({ mode }) => {
   return {
     // Relative URLs: the page is served from https://markdone.local/app/ by the asset handler.
     base: './',
+    plugins: [drawioFrame()],
     build: {
       outDir: harness
         ? fileURLToPath(new URL('./dist-harness', import.meta.url))

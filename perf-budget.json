@@ -108,6 +108,18 @@
     "webKeystrokeToFrameCodeBlockMs": {
       "unit": "ms",
       "budget": 33
+    },
+    "drawioFirstRenderMs": {
+      "unit": "ms",
+      "budget": null
+    },
+    "webKeystrokeProcessingDrawioHeavyMs": {
+      "unit": "ms",
+      "budget": null
+    },
+    "webKeystrokeToFrameDrawioHeavyMs": {
+      "unit": "ms",
+      "budget": null
     }
   }
 }

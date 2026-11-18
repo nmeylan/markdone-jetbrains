@@ -16,13 +16,15 @@ interface Settings {
   mermaid: boolean;
   highlight: boolean;
   softBreaks: boolean;
+  drawio: boolean;
+  drawioPattern: string;
   style: 'default' | 'compact' | 'serif';
   doubleClickEdit: boolean;
   vim: boolean;
   colorTheme: 'ide' | 'tokyo-night' | 'tokyo-storm' | 'tokyo-moon' | 'tokyo-light';
   vimrc: { mode: string; remap: boolean; lhs: string; rhs: string }[];
 }
-const DEFAULTS: Settings = { remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] };
+const DEFAULTS: Settings = { remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] };
 
 /** Sends a full 2.3 `settings` message; the page applies it in the next frame (after a scroll snapshot). */
 async function settings(page: Page, s: Partial<Settings>): Promise<void> {

@@ -14,10 +14,8 @@ import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
-import com.intellij.util.concurrency.EdtScheduledExecutorService
 import ch.nmeylan.markdone.editor.Perf
 import java.beans.PropertyChangeListener
-import java.util.concurrent.TimeUnit
 
 /**
  * IDE side of the page protocol for one document in one page (protocol/PROTOCOL.md):
@@ -58,9 +56,7 @@ class DocumentSync(
             val EDT = object : Scheduler {
                 // The task can change the layout, so it does not run inside a modal dialog opened after the request.
                 override fun schedule(delayMs: Long, task: () -> Unit): () -> Unit {
-                    val future = EdtScheduledExecutorService.getInstance()
-                        .schedule(task, ModalityState.defaultModalityState(), delayMs, TimeUnit.MILLISECONDS)
-                    return { future.cancel(false) }
+                    return scheduleOnEdt(delayMs, ModalityState.defaultModalityState(), task)
                 }
 
                 // any(): document changes made in a modal dialog (for example Replace) reach the page at once.

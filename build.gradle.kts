@@ -107,6 +107,7 @@ val webBuild = tasks.register<NpmTask>("webBuild") {
     dependsOn(npmCi)
     npmCommand = listOf("run", "build")
     inputs.dir("web/src")
+    inputs.dir("web/vendor")
     inputs.files(
         "web/index.html",
         "web/package-lock.json",

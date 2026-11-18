@@ -1,4 +1,5 @@
-// IDE <-> page messages, protocol version 2.6 (protocol/PROTOCOL.md).
+// IDE <-> page messages, protocol version 2.7 (protocol/PROTOCOL.md).
+import { MAX_PATTERN_LENGTH } from './drawio-ref';
 import { MAX_PATHS, MAX_PATH_LENGTH } from './paths';
 
 export const PROTOCOL_VERSION = 2;
@@ -28,7 +29,8 @@ export type IdeMessage =
   | { type: 'paths'; docId: string; exist: string[]; missing: string[] }
   | { type: 'theme'; dark: boolean; fontFamily: string; fontSizePx: number; zoom: number }
   | { type: 'css'; global: string; project: string | null }
-  | { type: 'settings'; remoteImages: boolean; math: boolean; mermaid: boolean; highlight: boolean; softBreaks: boolean; style: MdStyle; doubleClickEdit: boolean; vim: boolean; vimrc: VimMapping[]; colorTheme: MdColorTheme };
+  | { type: 'settings'; remoteImages: boolean; math: boolean; mermaid: boolean; highlight: boolean; softBreaks: boolean; drawio: boolean; drawioPattern: string; style: MdStyle; doubleClickEdit: boolean; vim: boolean; vimrc: VimMapping[]; colorTheme: MdColorTheme }
+  | { type: 'fileChanged'; docId: string; path: string };
 
 /** A key mapping for the page's Vim (from the user's .ideavimrc). */
 export interface VimMapping {
@@ -106,7 +108,7 @@ export function hostFunction(msg: PageMessage): 'ready' | 'patch' | 'link' | 'co
   }
 }
 
-type FieldKind = 'number' | 'offset' | 'offset?' | 'string' | 'boolean' | 'string|null' | 'changes' | 'selection?' | 'style' | 'mappings' | 'colorTheme' | 'strings';
+type FieldKind = 'number' | 'offset' | 'offset?' | 'string' | 'boolean' | 'string|null' | 'changes' | 'selection?' | 'style' | 'mappings' | 'colorTheme' | 'strings' | 'pattern' | 'filePath';
 
 const FIELDS: Record<IdeMessage['type'], Record<string, FieldKind>> = {
   open: { docId: 'string', writable: 'boolean' },
@@ -119,10 +121,14 @@ const FIELDS: Record<IdeMessage['type'], Record<string, FieldKind>> = {
   flush: { docId: 'string', seq: 'number' },
   writable: { docId: 'string', writable: 'boolean' },
   paths: { docId: 'string', exist: 'strings', missing: 'strings' },
+  fileChanged: { docId: 'string', path: 'filePath' },
   theme: { dark: 'boolean', fontFamily: 'string', fontSizePx: 'number', zoom: 'number' },
   css: { global: 'string', project: 'string|null' },
-  settings: { remoteImages: 'boolean', math: 'boolean', mermaid: 'boolean', highlight: 'boolean', softBreaks: 'boolean', style: 'style', doubleClickEdit: 'boolean', vim: 'boolean', vimrc: 'mappings', colorTheme: 'colorTheme' },
+  settings: { remoteImages: 'boolean', math: 'boolean', mermaid: 'boolean', highlight: 'boolean', softBreaks: 'boolean', drawio: 'boolean', drawioPattern: 'pattern', style: 'style', doubleClickEdit: 'boolean', vim: 'boolean', vimrc: 'mappings', colorTheme: 'colorTheme' },
 };
+
+/** Longest path of a `fileChanged` (the longest draw.io reference of the page is 1000 characters). */
+const MAX_FILE_PATH = 1000;
 
 const isOffset = (v: unknown): boolean => Number.isSafeInteger(v) && (v as number) >= 0;
 
@@ -178,6 +184,10 @@ function fieldOk(value: unknown, kind: FieldKind): boolean {
       );
     case 'strings':
       return Array.isArray(value) && value.length <= MAX_PATHS && value.every((v) => typeof v === 'string' && v.length <= MAX_PATH_LENGTH);
+    case 'pattern':
+      return typeof value === 'string' && value.length <= MAX_PATTERN_LENGTH;
+    case 'filePath':
+      return typeof value === 'string' && value.length >= 1 && value.length <= MAX_FILE_PATH;
     case 'colorTheme':
       return typeof value === 'string' && COLOR_THEMES.includes(value);
     case 'selection?':

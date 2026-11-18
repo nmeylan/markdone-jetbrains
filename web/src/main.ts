@@ -15,7 +15,7 @@ import { setPathRequester } from './paths';
 import { Controller, type FetchResult, RESTORE_FRAMES, type ViewPort, lookRestoring, movesView } from './controller';
 import { EditMode } from './edit-mode';
 import { markdownLanguage } from './language';
-import { livePreview, posAtEvent, refresh, setDarkTheme, setRenderSettings, tableAtEvent, withCurrentSettings } from './live-preview';
+import { drawioFileChanged, livePreview, posAtEvent, refresh, setDarkTheme, setRenderSettings, tableAtEvent, withCurrentSettings } from './live-preview';
 import { type IdeMessage, PROTOCOL_VERSION, type PageMessage, hostFunction, validateIdeMessage } from './protocol';
 import { applyUserCss, editorTheme } from './theme';
 
@@ -415,6 +415,14 @@ function applySettings(msg: Extract<IdeMessage, { type: 'settings' }>): void {
   });
 }
 
+/**
+ * `fileChanged` (2.7): a draw.io file changed. The version of the file goes up at once (a widget built later
+ * fetches it again); the visible widgets are rebuilt through the look change (next frame, scroll kept).
+ */
+function applyFileChanged(msg: Extract<IdeMessage, { type: 'fileChanged' }>): void {
+  if (drawioFileChanged(msg.docId, msg.path)) changeLook('fileChanged', () => true);
+}
+
 function receive(raw: unknown): void {
   const msg = validateIdeMessage(raw);
   if (!msg) {
@@ -430,6 +438,9 @@ function receive(raw: unknown): void {
       break;
     case 'settings':
       applySettings(msg);
+      break;
+    case 'fileChanged':
+      applyFileChanged(msg);
       break;
     default:
       controller.receive(msg);

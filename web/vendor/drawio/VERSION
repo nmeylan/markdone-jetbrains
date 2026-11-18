@@ -1,0 +1,6 @@
+draw.io viewer (jgraph/drawio), vendored file, not from npm. Apache 2.0 (LICENSE); stencils: STENCILS-LICENSE.
+tag: v32.7.4
+commit: f411a11f4f6b8994d869bdbc45f4d4d9e2284f34
+source: GitHub release asset draw.war of the tag, file js/viewer-static.min.js (the git file has no stencils inline)
+draw.war sha256: caf784637155f444e0b6fb7c154cae5dbad27cfc31cb16286054d43f996be42f
+viewer-static.min.js sha256: b01d969e0950abd925b0c8b9721fcad94e5652869af5dd171d4070e6d4b81462

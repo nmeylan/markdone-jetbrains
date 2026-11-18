@@ -17,9 +17,9 @@ object SecurityHandlers {
     private val LOG = logger<SecurityHandlers>()
 
     /**
-     * Allows only the first main-frame load of [pageUrl] (and one more after each [allowPageLoad]) and
-     * routes every resource request to [assets]. One request handler does both, so no other handler
-     * decides about our requests. [onRendererGone] runs on a CEF thread when the renderer process ends.
+     * Allows only the first main-frame load of [pageUrl] (and one more after each [allowPageLoad]) and the
+     * sub-frame load of the draw.io frame document, and routes every resource request to [assets]. One
+     * request handler does both, so no other handler decides about our requests. [onRendererGone] runs on a CEF thread when the renderer process ends.
      */
     class Requests(
         private val pageUrl: String,
@@ -44,6 +44,8 @@ object SecurityHandlers {
                 pageLoaded = true
                 return false
             }
+            // The draw.io frame: only its exact document URL, only as a sub-frame (nmey/DRAWIO.md §5.3).
+            if (allowsDrawioFrame(frame?.isMain, isRedirect, url)) return false
             LOG.info("Blocked navigation to ${url.take(200)}")
             return true
         }
@@ -62,6 +64,10 @@ object SecurityHandlers {
             onRendererGone()
         }
     }
+
+    /** True only for the load of the draw.io frame document as a sub-frame (`isMain == false`), not after a redirect. */
+    internal fun allowsDrawioFrame(isMain: Boolean?, isRedirect: Boolean, url: String): Boolean =
+        isMain == false && !isRedirect && url == AssetRequestHandler.DRAWIO_FRAME_URL
 
     /** Pop-ups are always cancelled. */
     class LifeSpan : CefLifeSpanHandlerAdapter() {

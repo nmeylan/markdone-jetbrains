@@ -4,7 +4,7 @@ import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
-import com.intellij.ui.SimpleListCellRenderer
+import com.intellij.ui.dsl.listCellRenderer.textListCellRenderer
 import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.bindIntValue
@@ -57,11 +57,11 @@ class MdConfigurable(private val project: Project) : BoundConfigurable(DISPLAY_N
             }
             group("Edit Mode") {
                 row("Style:") {
-                    comboBox(MdStyle.entries, SimpleListCellRenderer.create("") { it.label })
+                    comboBox(MdStyle.entries, textListCellRenderer { it?.label.orEmpty() })
                         .bindItem({ settings.style }, { settings.style = it ?: MdStyle.DEFAULT })
                 }
                 row("Color theme:") {
-                    comboBox(MdColorTheme.entries, SimpleListCellRenderer.create("") { it.label })
+                    comboBox(MdColorTheme.entries, textListCellRenderer { it?.label.orEmpty() })
                         .bindItem({ settings.colorTheme }, { settings.colorTheme = it ?: MdColorTheme.IDE })
                         .comment("Tokyo Night themes: https://github.com/tcmmichaelb139/obsidian-tokyonight")
                 }
@@ -75,6 +75,15 @@ class MdConfigurable(private val project: Project) : BoundConfigurable(DISPLAY_N
                 }
                 row {
                     checkBox("Mermaid diagrams").bindSelected(settings::mermaid)
+                }
+                row {
+                    checkBox("Render draw.io diagrams").bindSelected(settings::drawio)
+                        .comment("Shows a .drawio file of the project for a drawio: line, or an image or link alone in its paragraph.")
+                }
+                row("draw.io reference pattern:") {
+                    textField().align(AlignX.FILL).bindText(settings::drawioPattern)
+                        .comment("Template of the drawio: line, with one {path} and optionally {page}. The separator between them also splits ![x](a.drawio#Page).")
+                        .validationOnApply { MdSettings.drawioPatternError(it.text)?.let { message -> error(message) } }
                 }
                 row {
                     checkBox("Code highlighting").bindSelected(settings::highlight)

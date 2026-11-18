@@ -1,0 +1,34 @@
+{
+  "description": "Protocol 2.7 (draw.io): IDE messages for L4 on both sides, not a replay (it is in a subfolder: the replay tests read only protocol/fixtures/*.json). `settings` is what the IDE sends with the default settings; `fileChanged` is what it sends when a served .drawio file changes (the docId is random per run: the Kotlin test replaces it). `invalid` messages must be rejected by the page.",
+  "docId": "0123456789abcdef0123456789abcdef",
+  "settings": {
+    "type": "settings",
+    "remoteImages": false,
+    "math": true,
+    "mermaid": true,
+    "highlight": true,
+    "softBreaks": true,
+    "drawio": true,
+    "drawioPattern": "drawio:{path}#{page}",
+    "style": "default",
+    "colorTheme": "ide",
+    "doubleClickEdit": false,
+    "vim": false,
+    "vimrc": []
+  },
+  "fileChanged": {
+    "type": "fileChanged",
+    "docId": "0123456789abcdef0123456789abcdef",
+    "path": "docs/my diagram.drawio"
+  },
+  "invalid": [
+    { "type": "fileChanged", "docId": "0123456789abcdef0123456789abcdef" },
+    { "type": "fileChanged", "docId": "0123456789abcdef0123456789abcdef", "path": "" },
+    { "type": "fileChanged", "docId": "0123456789abcdef0123456789abcdef", "path": 5 },
+    { "type": "fileChanged", "docId": "0123456789abcdef0123456789abcdef", "path": "a.drawio", "extra": 1 },
+    { "type": "fileChanged", "path": "a.drawio" },
+    { "type": "settings", "remoteImages": false, "math": true, "mermaid": true, "highlight": true, "softBreaks": true, "style": "default", "colorTheme": "ide", "doubleClickEdit": false, "vim": false, "vimrc": [] },
+    { "type": "settings", "remoteImages": false, "math": true, "mermaid": true, "highlight": true, "softBreaks": true, "drawio": "yes", "drawioPattern": "drawio:{path}#{page}", "style": "default", "colorTheme": "ide", "doubleClickEdit": false, "vim": false, "vimrc": [] },
+    { "type": "settings", "remoteImages": false, "math": true, "mermaid": true, "highlight": true, "softBreaks": true, "drawio": true, "drawioPattern": 5, "style": "default", "colorTheme": "ide", "doubleClickEdit": false, "vim": false, "vimrc": [] }
+  ]
+}

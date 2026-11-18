@@ -5,7 +5,7 @@ import com.intellij.ide.trustedProjects.TrustedProjectsListener
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.application.runReadActionBlocking
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.ControlFlowException
@@ -19,17 +19,16 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
 import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
-import com.intellij.util.concurrency.EdtScheduledExecutorService
 import com.intellij.util.messages.Topic
 import ch.nmeylan.markdone.jcef.AssetRequestHandler
 import ch.nmeylan.markdone.jcef.PathRules
 import ch.nmeylan.markdone.settings.MdProjectSettings
 import ch.nmeylan.markdone.settings.MdSettings
+import ch.nmeylan.markdone.sync.scheduleOnEdt
 import java.io.IOException
 import java.net.URLEncoder
 import java.nio.file.InvalidPathException
 import java.nio.file.Path
-import java.util.concurrent.TimeUnit
 
 /**
  * User CSS of the page (protocol "CSS (M2)"): global CSS from [MdSettings] and the
@@ -50,12 +49,9 @@ class UserCssService : Disposable {
     // Test seams.
     internal var isTrusted: (Project) -> Boolean = { TrustedProjects.isProjectTrusted(it) }
     internal var projectDir: (Project) -> VirtualFile? = { it.guessProjectDir() }
-    internal var schedule: (Long, () -> Unit) -> () -> Unit = { delay, task ->
-        val future = EdtScheduledExecutorService.getInstance().schedule(task, ModalityState.any(), delay, TimeUnit.MILLISECONDS)
-        ({ future.cancel(false) })
-    }
+    internal var schedule: (Long, () -> Unit) -> () -> Unit = { delay, task -> scheduleOnEdt(delay, ModalityState.any(), task) }
     internal var openProjects: () -> List<Project> = { ProjectManager.getInstance().openProjects.toList() }
-    internal var contentRoots: (Project) -> List<Path> = { runReadAction { AssetRequestHandler.contentRoots(it) } }
+    internal var contentRoots: (Project) -> List<Path> = { runReadActionBlocking { AssetRequestHandler.contentRoots(it) } }
 
     private val pending = HashMap<Project, () -> Unit>()
 
@@ -86,7 +82,7 @@ class UserCssService : Disposable {
 
     private fun loadProject(project: Project, projectToken: String, global: String): UserCss {
         if (project.isDisposed) return UserCss(global, null, false)
-        val css = runReadAction { cssFile(project, warn = true) } ?: return UserCss(global, null, false)
+        val css = runReadActionBlocking { cssFile(project, warn = true) } ?: return UserCss(global, null, false)
         if (!isTrusted(project)) return UserCss(global, null, true)
         if (tooLarge(css.length, css.path)) return UserCss(global, null, false)
         val text = try {
@@ -106,7 +102,7 @@ class UserCssService : Disposable {
      */
     fun assetDir(project: Project): Path? {
         if (project.isDisposed || !isTrusted(project)) return null
-        return runReadAction { cssFile(project, warn = false)?.parent }?.let(::nioPath)
+        return runReadActionBlocking { cssFile(project, warn = false)?.parent }?.let(::nioPath)
     }
 
     /** The project CSS file, if it exists. Call it inside a read action. */

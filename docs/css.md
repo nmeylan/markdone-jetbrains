@@ -175,6 +175,8 @@ markers are visible (class `md-marker`); on other lines they are hidden or repla
 | `.md-math-source` | Widget | A formula shown as its source (longer than 8 000 characters, or KaTeX failed); with `.md-math` |
 | `.md-mermaid` | Widget | A Mermaid diagram (`<svg>` inside) |
 | `.md-mermaid-error` | Widget | A Mermaid fence that does not render; the message is in `.md-mermaid-message` |
+| `.md-drawio` | Widget | A draw.io diagram: `.md-drawio-header` (path and page, click shows the source) above `.md-drawio-body` with the sandboxed `iframe.md-drawio-frame`. The diagram itself is in the frame and cannot be styled |
+| `.md-drawio-message` | Widget | Text in `.md-drawio-body` instead of a frame: `.md-drawio-pending` (waiting for data or a free frame), `.md-drawio-error` (file missing, too large, not draw.io, page not found, viewer error) |
 | `.hljs-*` | Inline | Code highlighting tokens in `.md-codeblock` lines (highlight.js scope names, for example `.hljs-keyword`, `.hljs-string`). Colours: the `--md-code-*` variables |
 
 KaTeX's own CSS (`.katex …`) is not in a layer. Mermaid writes its styles into each diagram's

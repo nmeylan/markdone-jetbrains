@@ -4,7 +4,7 @@
  * Rule: the work per update is proportional to the visible range, not to the document.
  * - Inline and line decorations: a ViewPlugin that walks the syntax tree only inside
  *   `view.visibleRanges`.
- * - Block widgets (tables, `$$` math, Mermaid fences; block widgets that replace line breaks must
+ * - Block widgets (tables, `$$` math, Mermaid fences, draw.io references; block widgets that replace line breaks must
  *   come from a StateField): the field decorates only a window = viewport (sent by a small
  *   ViewPlugin through an effect) plus a margin, plus a margin around the main selection head (so
  *   a jump is covered at once).
@@ -19,7 +19,8 @@
  * Stable classes (docs/css.md): md-h1..6, md-strong, md-em, md-strike, md-code,
  * md-link, md-marker, md-quote, md-codeblock[data-lang], md-hr, md-bullet, md-list-number,
  * md-task, md-table, md-img, md-frontmatter, md-footnote, md-html-source, md-math,
- * md-math-block, md-mermaid, md-mermaid-error, hljs-*.
+ * md-math-block, md-mermaid, md-mermaid-error, md-drawio, md-drawio-header, md-drawio-body, md-drawio-frame,
+ * md-drawio-message, md-drawio-error, md-drawio-pending, hljs-*.
  */
 import { syntaxTree } from '@codemirror/language';
 import { type EditorState, type Extension, type Range, StateEffect, StateField } from '@codemirror/state';
@@ -28,6 +29,7 @@ import type { SyntaxNode, SyntaxNodeRef } from '@lezer/common';
 
 import { awaitingDoubleClick } from './edit-mode';
 import { docIdFacet } from './controller';
+import { DEFAULT_PATTERN, type DrawioRef, parseDrawioRef } from './drawio-ref';
 import { Lru, hash53, heavyStats, keyOf, lazy } from './heavy/cache';
 import { CodeHighlighter, type LineRange, hljsName } from './heavy/highlight';
 import { type ImageSource, resolveImage } from './images';
@@ -179,7 +181,10 @@ export const refresh = StateEffect.define<null>();
  * does not render (math: the `$` markers as `md-marker`; Mermaid: a code block; code: no
  * highlighting), and its lazy chunk is not loaded.
  */
-const features = { math: true, mermaid: true, highlight: true, softBreaks: true };
+const features = { math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true };
+
+/** Template of the `drawio:` line (`settings.drawioPattern`). */
+let drawioPattern = DEFAULT_PATTERN;
 
 /**
  * Increases on each change of the render settings. The block field keeps the value it was built
@@ -194,6 +199,10 @@ export interface RenderSettings {
   highlight: boolean;
   /** Off: a single line feed inside a paragraph shows as a space (the lines flow together). */
   softBreaks: boolean;
+  /** Off: a draw.io reference shows as normal Markdown. */
+  drawio: boolean;
+  /** Template of the `drawio:` line, e.g. `drawio:{path}#{page}`. */
+  drawioPattern: string;
 }
 
 /**
@@ -202,14 +211,39 @@ export interface RenderSettings {
  * before they are shown (`withCurrentSettings`).
  */
 export function setRenderSettings(s: RenderSettings): boolean {
-  if (s.remoteImages === remoteImages && s.math === features.math && s.mermaid === features.mermaid && s.highlight === features.highlight && s.softBreaks === features.softBreaks) return false;
+  if (
+    s.remoteImages === remoteImages &&
+    s.math === features.math &&
+    s.mermaid === features.mermaid &&
+    s.highlight === features.highlight &&
+    s.softBreaks === features.softBreaks &&
+    s.drawio === features.drawio &&
+    s.drawioPattern === drawioPattern
+  ) {
+    return false;
+  }
   remoteImages = s.remoteImages;
   features.math = s.math;
   features.mermaid = s.mermaid;
   features.highlight = s.highlight;
   features.softBreaks = s.softBreaks;
+  features.drawio = s.drawio;
+  drawioPattern = s.drawioPattern;
   generation++;
   return true;
+}
+
+/** File versions by (docId, path): `fileChanged` increases one, so widgets built later fetch the file again. */
+const drawioVersions = new Map<string, number>();
+
+const drawioKey = (docId: string, path: string): string => `${docId}\n${path}`;
+
+/** `fileChanged`: the draw.io file changed. True when a widget may show it (dispatch `refresh`). */
+export function drawioFileChanged(docId: string, path: string): boolean {
+  const key = drawioKey(docId, path);
+  drawioVersions.set(key, (drawioVersions.get(key) ?? 0) + 1);
+  generation++;
+  return features.drawio;
 }
 
 /** `theme {dark}`: Mermaid diagrams are drawn again with the matching Mermaid theme. True when it changed (dispatch `refresh`). */
@@ -423,6 +457,62 @@ class MermaidWidget extends WidgetType {
       if (!el.classList.contains('md-mermaid-pending')) done();
     }, warnLoad);
     return el;
+  }
+  override ignoreEvent(): boolean {
+    return false;
+  }
+}
+
+type DrawioModule = typeof import('./heavy/drawio');
+let drawioModule: DrawioModule | null = null;
+const drawioLoad = lazy(() =>
+  import('./heavy/drawio').then((m) => {
+    heavyStats.chunks.push('drawio');
+    return (drawioModule = m);
+  }),
+);
+
+/** Height of a draw.io widget before its frame reports one. */
+const DRAWIO_HEIGHT = 200;
+
+class DrawioWidget extends WidgetType {
+  constructor(
+    readonly docId: string,
+    readonly ref: DrawioRef,
+    readonly dark: boolean,
+    readonly version: number,
+  ) {
+    super();
+  }
+  private get heightKey(): string {
+    return `D${drawioKey(this.docId, this.ref.path)}\n${this.ref.page ?? ''}`;
+  }
+  override eq(other: DrawioWidget): boolean {
+    return other.docId === this.docId && other.ref.path === this.ref.path && other.ref.page === this.ref.page && other.dark === this.dark && other.version === this.version;
+  }
+  override get estimatedHeight(): number {
+    return heights.get(this.heightKey) ?? DRAWIO_HEIGHT;
+  }
+  toDOM(view: EditorView): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'md-drawio';
+    const header = document.createElement('div');
+    header.className = 'md-drawio-header';
+    header.textContent = this.ref.page === null ? this.ref.path : `${this.ref.path} \u00b7 ${this.ref.page}`;
+    const body = document.createElement('div');
+    body.className = 'md-drawio-body';
+    body.style.minHeight = `${this.estimatedHeight}px`;
+    el.append(header, body);
+    void drawioLoad().then((m) => {
+      if (!el.isConnected) return;
+      const spec = { docId: this.docId, path: this.ref.path, page: this.ref.page, dark: this.dark, version: this.version };
+      m.mountDrawio(body, spec, () => measured(view, el, this.heightKey));
+    }, warnLoad);
+    return el;
+  }
+  override destroy(dom: HTMLElement): void {
+    const body = dom.querySelector<HTMLElement>('.md-drawio-body');
+    if (body) drawioModule?.releaseDrawio(body);
   }
   override ignoreEvent(): boolean {
     return false;
@@ -920,6 +1010,21 @@ function tableWidget(state: EditorState, table: SyntaxNode): Decoration {
   return Decoration.replace({ widget: new TableWidget(source, modelOf(state, table, source)), block: true });
 }
 
+/** Longest paragraph that can be a draw.io reference. */
+const MAX_DRAWIO_REF = 1000;
+
+/** Block widget of a top-level paragraph that is a draw.io reference (image or link alone, or a `drawio:` line); null otherwise. */
+function drawioWidget(state: EditorState, para: SyntaxNode): Decoration | null {
+  if (para.parent?.name !== 'Document' || para.to - para.from > MAX_DRAWIO_REF) return null;
+  const text = state.doc.sliceString(para.from, para.to);
+  if (!/\.drawio/i.test(text)) return null;
+  const ref = parseDrawioRef(text, drawioPattern);
+  if (!ref) return null;
+  const docId = state.facet(docIdFacet);
+  const version = drawioVersions.get(drawioKey(docId, ref.path)) ?? 0;
+  return Decoration.replace({ widget: new DrawioWidget(docId, ref, darkTheme, version), block: true });
+}
+
 /** Block widget of a table, a `$$` block or a Mermaid fence; null for other nodes. */
 function blockWidget(state: EditorState, node: SyntaxNode): Decoration | null {
   if (node.name === 'Table') return tableWidget(state, node);
@@ -986,7 +1091,11 @@ function buildTables(state: EditorState, windows: Win[]): DecorationSet {
           return false;
         }
         if (ref.name === 'Paragraph') {
-          if (!features.softBreaks && !done.has(ref.from)) softBreakDecorations(state, ref.node, out);
+          if (!done.has(ref.from)) {
+            const deco = features.drawio && !touches(state, ref.from, ref.to) ? drawioWidget(state, ref.node) : null;
+            if (deco) out.push(deco.range(ref.from, ref.to));
+            else if (!features.softBreaks) softBreakDecorations(state, ref.node, out);
+          }
           done.add(ref.from);
           return false;
         }
@@ -1167,7 +1276,7 @@ function clicks(command: (c: Command) => void): Extension {
         return true;
       }
       // A rendered formula or diagram: the caret goes to its start (the block then shows its source).
-      const heavy = target.closest('.md-math, .md-mermaid');
+      const heavy = target.closest('.md-math, .md-mermaid') ?? target.closest('.md-drawio-header')?.closest('.md-drawio');
       if (heavy) {
         view.dispatch({ selection: { anchor: view.posAtDOM(heavy) } });
         view.focus();

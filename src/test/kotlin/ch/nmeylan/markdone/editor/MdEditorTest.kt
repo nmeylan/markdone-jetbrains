@@ -587,8 +587,8 @@ class MdEditorTest : BasePlatformTestCase() {
         }
     }
 
-    /** The banner is updated when the text editor has loaded (the platform does not update it for this editor). */
-    fun testBannerIsUpdatedWhenTheTextEditorHasLoaded() {
+    /** The banner is updated after the construction, and when the text editor sets its highlighter at the end of the load. */
+    fun testBannerIsUpdatedAfterTheConstructionAndWhenTheHighlighterChanges() {
         val updated = mutableListOf<com.intellij.openapi.vfs.VirtualFile>()
         val notifications = object : com.intellij.ui.EditorNotifications() {
             override fun updateNotifications(file: com.intellij.openapi.vfs.VirtualFile) { updated += file }
@@ -600,43 +600,21 @@ class MdEditorTest : BasePlatformTestCase() {
         val document = FileDocumentManager.getInstance().getDocument(file)!!
         val service = newService()
         Disposer.register(testRootDisposable, service)
-        val loaderKey = com.intellij.openapi.fileEditor.impl.text.AsyncEditorLoader.ASYNC_LOADER
-        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob())
-        try {
-            /** A text editor that still loads; the load completes after [beforeLoad]. */
-            fun loadLater(beforeLoad: (MdEditor) -> Unit) {
-                val textEditor = TextEditorProvider.getInstance().createEditor(project, file) as com.intellij.openapi.fileEditor.impl.text.TextEditorImpl
-                // The constructor is Kotlin-internal (public in the bytecode).
-                val loader = com.intellij.openapi.fileEditor.impl.text.AsyncEditorLoader::class.java
-                    .getConstructor(com.intellij.openapi.project.Project::class.java, TextEditorProvider::class.java, kotlinx.coroutines.CoroutineScope::class.java)
-                    .newInstance(project, TextEditorProvider.getInstance(), scope)
-                textEditor.editor.putUserData(loaderKey, loader)
-                updated.clear() // the text editor itself updates the banners when it is created
-                val editor = MdEditor(textEditor, WebEditor(project, file, document) { service })
-                editor.component // builds the UI before a dispose
-                try {
-                    assertEquals("not before the load", emptyList<Any>(), updated)
-                    beforeLoad(editor)
-                    textEditor.editor.putUserData(loaderKey, null)
-                    loader.start(textEditor, kotlinx.coroutines.CompletableDeferred(Unit))
-                } finally {
-                    Disposer.dispose(editor)
-                }
-            }
-            loadLater {}
-            assertEquals(listOf(file), updated)
-            loadLater { Disposer.dispose(it) }
-            assertEquals("disposed before the load", emptyList<Any>(), updated)
-        } finally {
-            scope.coroutineContext[kotlinx.coroutines.Job]!!.cancel()
-        }
-        // A text editor that has loaded: at once.
-        val loaded = TextEditorProvider.getInstance().createEditor(project, file) as TextEditor
-        updated.clear()
-        val editor = MdEditor(loaded, WebEditor(project, file, document) { service })
+        val textEditor = TextEditorProvider.getInstance().createEditor(project, file) as TextEditor
+        updated.clear() // the text editor itself updates the banners when it is created
+        val editor = MdEditor(textEditor, WebEditor(project, file, document) { service })
         editor.component
-        Disposer.dispose(editor)
+        assertEquals("not before the EDT queue runs", emptyList<Any>(), updated)
+        com.intellij.testFramework.PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
         assertEquals(listOf(file), updated)
+        updated.clear()
+        val ex = textEditor.editor as com.intellij.openapi.editor.ex.EditorEx
+        ex.highlighter = com.intellij.openapi.editor.highlighter.EditorHighlighterFactory.getInstance().createEditorHighlighter(project, file)
+        assertTrue("the highlighter changed", file in updated)
+        Disposer.dispose(editor)
+        updated.clear()
+        ex.highlighter = com.intellij.openapi.editor.highlighter.EditorHighlighterFactory.getInstance().createEditorHighlighter(project, file)
+        assertEquals("disposed", emptyList<Any>(), updated)
     }
 
     /** The update of [ch.nmeylan.markdone.actions.ToggleModeAction] in a data context with [editor]. */

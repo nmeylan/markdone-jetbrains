@@ -3,7 +3,7 @@ import { frames } from './helpers';
 
 /* L2 edit start (protocol 2.5): `doubleClickEdit` and `vim`. */
 
-const SETTINGS = { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] } as const;
+const SETTINGS = { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, drawio: true, drawioPattern: 'drawio:{path}#{page}', style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] } as const;
 
 async function settings(page: import('@playwright/test').Page, s: { doubleClickEdit?: boolean; vim?: boolean; vimrc?: { mode: string; remap: boolean; lhs: string; rhs: string }[] }) {
   await page.evaluate((m) => window.__harness.send(m), { ...SETTINGS, ...s });

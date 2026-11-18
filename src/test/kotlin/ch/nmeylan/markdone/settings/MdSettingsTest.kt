@@ -207,4 +207,33 @@ class MdSettingsTest : BasePlatformTestCase() {
         com.intellij.testFramework.PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
         assertEquals(2, changes())
     }
+
+    fun testDrawioSettings() {
+        assertTrue(settings.drawio)
+        assertEquals("drawio:{path}#{page}", settings.drawioPattern)
+        val changes = countChanges()
+        settings.drawio = false
+        settings.drawioPattern = "[[{path}@@{page}]]"
+        assertEquals(2, changes())
+        val copy = MdSettings()
+        copy.loadState(XmlSerializer.deserialize(XmlSerializer.serialize(settings.state), MdSettings.SettingsState::class.java))
+        assertFalse(copy.drawio)
+        assertEquals("[[{path}@@{page}]]", copy.drawioPattern)
+        settings.drawioPattern = "x".repeat(101)
+        assertEquals("Above 100 characters: the default goes to the page", "drawio:{path}#{page}", settings.drawioPattern)
+    }
+
+    fun testDrawioPatternValidation() {
+        for (ok in listOf("drawio:{path}#{page}", "dio:{path}@@{page}", "[[{path}|{page}]]", "{path}", "x:{path}!", "{path}#{page}", "a{path}b{page}c")) {
+            assertNull(ok, MdSettings.drawioPatternError(ok))
+        }
+        for (bad in listOf(
+            "", "drawio:", "{path}{path}", "{page}", "{page}#{path}", "{path}#{page}#{page}", "{path}{page}", "{path} {page}",
+            "{path}){page}", "{path}]{page}", "{path}\t{page}", "{path}\n{page}", "{path}#{page}" + "x".repeat(100),
+        )) {
+            assertNotNull(bad, MdSettings.drawioPatternError(bad))
+        }
+        assertEquals(100, MdSettings.MAX_DRAWIO_PATTERN)
+        assertNull(MdSettings.drawioPatternError("{path}#{page}" + "x".repeat(100 - "{path}#{page}".length)))
+    }
 }

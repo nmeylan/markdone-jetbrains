@@ -43,6 +43,8 @@ class MdSettings : SimplePersistentStateComponent<MdSettings.SettingsState>(Sett
         var mermaid by property(true)
         var highlight by property(true)
         var softBreaks by property(true)
+        var drawio by property(true)
+        var drawioPattern by string(DEFAULT_DRAWIO_PATTERN)
         var doubleClickEdit by property(false)
         var vim by property(false)
         var openInEditMode by property(false)
@@ -135,6 +137,24 @@ class MdSettings : SimplePersistentStateComponent<MdSettings.SettingsState>(Sett
             changed()
         }
 
+    /** On: draw.io references (`drawio:` lines, `.drawio` images and links) show the diagram. */
+    var drawio: Boolean
+        get() = state.drawio
+        set(value) {
+            if (value == drawio) return
+            state.drawio = value
+            changed()
+        }
+
+    /** Template of the `drawio:` line (protocol 2.7), see [drawioPatternError]. A stored value above [MAX_DRAWIO_PATTERN] characters gives the default. */
+    var drawioPattern: String
+        get() = state.drawioPattern?.takeIf { it.length <= MAX_DRAWIO_PATTERN } ?: DEFAULT_DRAWIO_PATTERN
+        set(value) {
+            if (value == drawioPattern) return
+            state.drawioPattern = value
+            changed()
+        }
+
     /** On: the page is editable only after a double-click (Escape or leaving the page ends the edit). */
     var doubleClickEdit: Boolean
         get() = state.doubleClickEdit
@@ -206,6 +226,30 @@ class MdSettings : SimplePersistentStateComponent<MdSettings.SettingsState>(Sett
         const val MIN_ZOOM_PERCENT = 50
         const val MAX_ZOOM_PERCENT = 300
         const val ZOOM_STEP_PERCENT = 10
+        const val DEFAULT_DRAWIO_PATTERN = "drawio:{path}#{page}"
+        const val MAX_DRAWIO_PATTERN = 100
+
+        /**
+         * The reason why [template] is not a valid `drawio:` line template, or `null`. Same rules as the page
+         * (`parsePattern` in web/src/drawio-ref.ts): one `{path}`, at most one `{page}` after it, and between them a
+         * separator without white space, `)` or `]` (it also splits `![x](a.drawio<separator>Page)`).
+         */
+        fun drawioPatternError(template: String): String? {
+            if (template.length > MAX_DRAWIO_PATTERN) return "Longer than $MAX_DRAWIO_PATTERN characters"
+            if ('\n' in template || '\r' in template) return "No line breaks"
+            val path = template.indexOf("{path}")
+            if (path < 0 || template.indexOf("{path}", path + 1) >= 0) return "Needs exactly one {path}"
+            val prefix = template.substring(0, path)
+            val rest = template.substring(path + "{path}".length)
+            if ("{page}" in prefix) return "{page} must come after {path}"
+            val page = rest.indexOf("{page}")
+            if (page < 0) return null
+            if (rest.indexOf("{page}", page + 1) >= 0) return "At most one {page}"
+            val separator = rest.substring(0, page)
+            if (separator.isEmpty()) return "Needs a separator between {path} and {page}"
+            if (separator.any { it.isWhitespace() || it == ')' || it == ']' }) return "The separator cannot have white space, ')' or ']'"
+            return null
+        }
 
         @Topic.AppLevel
         val TOPIC = Topic(Listener::class.java, Topic.BroadcastDirection.NONE)

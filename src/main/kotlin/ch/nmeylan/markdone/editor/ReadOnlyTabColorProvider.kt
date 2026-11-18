@@ -1,7 +1,7 @@
 package ch.nmeylan.markdone.editor
 
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.fileEditor.FileEditorProvider
+import com.intellij.openapi.fileEditor.ex.FileEditorProviderManager
 import com.intellij.openapi.fileEditor.impl.EditorTabColorProvider
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
@@ -19,14 +19,14 @@ class ReadOnlyTabColorProvider : EditorTabColorProvider, DumbAware {
 
     override fun getEditorTabColor(project: Project, file: VirtualFile): Color? {
         val colors = FileColorManager.getInstance(project)
-        if (!colors.isEnabledForTabs || !isReadOnly(file) || !provider().accept(project, file)) return null
+        if (!colors.isEnabledForTabs || !isReadOnly(file) || provider?.accept(project, file) != true) return null
         return colors.getColor(COLOR)
     }
 
     private fun isReadOnly(file: VirtualFile): Boolean =
         !file.isWritable || FileDocumentManager.getInstance().getCachedDocument(file)?.isWritable == false
 
-    private fun provider() = FileEditorProvider.EP_FILE_EDITOR_PROVIDER.findExtensionOrFail(MdFileEditorProvider::class.java)
+    private val provider by lazy { FileEditorProviderManager.getInstance().getProvider(MdFileEditorProvider.EDITOR_TYPE_ID) }
 
     companion object {
         const val COLOR = "Gray"

@@ -3,7 +3,7 @@
     <name>Markdone</name>
     <vendor>Nicolas Meylan</vendor>
     <description><![CDATA[
-    <p>Fast, private Markdown editor: one tab with a <b>Source</b> mode (platform text editor)
+    <p>Fast, virtual rendering, private Markdown editor: one tab with a <b>Source</b> mode (platform text editor)
     and an <b>Edit</b> mode (live preview that you can edit). No network access: all scripts are bundled.</p>
     <p><b>Editor</b></p>
     <ul>
