@@ -1,0 +1,496 @@
+/*
+ * Page CSS (docs/css.md). Cascade layers, lowest first:
+ *   base      reset and page structure
+ *   theme     built-in light/dark theme: --md-* variables and the md-* classes
+ *   user      global and project CSS (`<style id="user-css">`, PROTOCOL.md "CSS (M2)")
+ *   editor-ui caret, selection, search panel, table controls, read-only state: stays usable
+ *             whatever the user layer does with normal declarations
+ * CodeMirror's own styles are unlayered; theme.ts `editorTheme` maps the variables onto them.
+ * This statement must stay the first rule of the page CSS.
+ */
+@layer base, theme, user, editor-ui;
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    height: 100%;
+  }
+  #app {
+    height: 100%;
+  }
+}
+
+@layer theme {
+  :root {
+    --md-font-body: var(--md-ide-font, system-ui, sans-serif);
+    --md-font-mono: ui-monospace, 'JetBrains Mono', monospace;
+    --md-font-size: var(--md-ide-font-size, 14px);
+    --md-line-height: 1.6;
+    --md-max-width: 916px;
+    --md-fg: #1f2328;
+    --md-bg: #ffffff;
+    --md-accent: #0969da;
+    --md-muted: #59636e;
+    --md-heading-fg: #1f2328;
+    --md-heading-font: var(--md-font-body);
+    --md-heading-weight: 600;
+    --md-h1-size: 2em;
+    --md-h2-size: 1.5em;
+    --md-h3-size: 1.25em;
+    --md-h4-size: 1.1em;
+    --md-h5-size: 1em;
+    --md-h6-size: 1em;
+    /* Space above heading lines; padding of the text column (top, sides, bottom). */
+    --md-heading-space: 0px;
+    --md-content-padding: 16px 32px 64px;
+    --md-code-bg: #f6f8fa;
+    --md-border: #d1d9e0;
+    --md-link: #0969da;
+    --md-marker: #8c959f;
+    --md-error: #cf222e;
+    /* Code highlighting (hljs-* classes). */
+    --md-code-keyword: #cf222e;
+    --md-code-string: #0a3069;
+    --md-code-comment: #6e7781;
+    --md-code-number: #0550ae;
+    --md-code-type: #953800;
+    --md-code-attr: #8250df;
+    --md-code-meta: #116329;
+    color-scheme: light;
+  }
+
+  :root[data-ide-theme='dark'] {
+    --md-fg: #dfe1e5;
+    --md-bg: #1e1f22;
+    --md-accent: #548af7;
+    --md-muted: #9da0a8;
+    --md-heading-fg: #dfe1e5;
+    --md-code-bg: #2b2d30;
+    --md-border: #43454a;
+    --md-link: #548af7;
+    --md-marker: #6f737a;
+    --md-error: #f75464;
+    --md-code-keyword: #cf8e6d;
+    --md-code-string: #6aab73;
+    --md-code-comment: #7a7e85;
+    --md-code-number: #2aacb8;
+    --md-code-type: #bcbec4;
+    --md-code-attr: #c77dbb;
+    --md-code-meta: #b3ae60;
+    color-scheme: dark;
+  }
+
+  /*
+   * Built-in styles: `<html data-md-style="default|compact|serif">` from `settings`.
+   * Default is the look above. Compact and Serif change only fonts, sizes and spacing, so the light
+   * and dark colours above (`:root[data-ide-theme]`) apply to both. User CSS (layer `user`) wins.
+   */
+  :root[data-md-style='compact'] {
+    --md-font-size: calc(var(--md-ide-font-size, 14px) * 0.93);
+    --md-line-height: 1.4;
+    --md-max-width: 1100px;
+    --md-h1-size: 1.5em;
+    --md-h2-size: 1.3em;
+    --md-h3-size: 1.15em;
+    --md-h4-size: 1.05em;
+    --md-content-padding: 8px 20px 32px;
+  }
+  :root[data-md-style='serif'] {
+    --md-font-body: Charter, 'Bitstream Charter', 'Iowan Old Style', Georgia, Cambria, 'Noto Serif', 'DejaVu Serif', serif;
+    --md-font-size: calc(var(--md-ide-font-size, 14px) * 1.15);
+    --md-line-height: 1.75;
+    --md-max-width: 720px;
+    --md-heading-weight: 700;
+    --md-h1-size: 2.2em;
+    --md-h2-size: 1.7em;
+    --md-h3-size: 1.35em;
+    --md-h4-size: 1.15em;
+    --md-heading-space: 0.5em;
+    --md-content-padding: 32px 40px 96px;
+  }
+
+  html,
+  body {
+    background: var(--md-bg);
+    color: var(--md-fg);
+    font-family: var(--md-font-body);
+    font-size: var(--md-font-size);
+  }
+
+  .md-h {
+    font-family: var(--md-heading-font);
+    font-weight: var(--md-heading-weight);
+    color: var(--md-heading-fg);
+  }
+  .md-h1 {
+    font-size: var(--md-h1-size);
+  }
+  .md-h2 {
+    font-size: var(--md-h2-size);
+  }
+  .md-h3 {
+    font-size: var(--md-h3-size);
+  }
+  .md-h4 {
+    font-size: var(--md-h4-size);
+  }
+  .md-h5 {
+    font-size: var(--md-h5-size);
+  }
+  .md-h6 {
+    font-size: var(--md-h6-size);
+    color: var(--md-muted);
+  }
+  .md-em {
+    font-style: italic;
+  }
+  .md-strong {
+    font-weight: 600;
+  }
+  .md-strike {
+    text-decoration: line-through;
+  }
+  .md-marker {
+    color: var(--md-marker);
+  }
+  .md-code,
+  .md-codeblock,
+  .md-table-src,
+  .md-frontmatter,
+  .md-html-source {
+    font-family: var(--md-font-mono);
+    font-size: 0.9em;
+  }
+  .md-code {
+    background: var(--md-code-bg);
+    border-radius: 4px;
+  }
+  .md-codeblock,
+  .md-frontmatter {
+    background: var(--md-code-bg);
+  }
+  .md-frontmatter,
+  .md-html-source {
+    color: var(--md-muted);
+  }
+  .md-quote {
+    border-left: 4px solid var(--md-border);
+    padding-left: 12px;
+    color: var(--md-muted);
+  }
+  .md-link {
+    color: var(--md-link);
+    text-decoration: underline;
+  }
+  .md-footnote {
+    color: var(--md-accent);
+  }
+  .md-bullet,
+  .md-list-number {
+    color: var(--md-muted);
+  }
+  .md-list-number {
+    font-variant-numeric: tabular-nums;
+  }
+  .md-task {
+    margin: 0 4px 0 0;
+    vertical-align: middle;
+  }
+  .md-hr {
+    display: inline-block;
+    width: 100%;
+    vertical-align: middle;
+    border-top: 2px solid var(--md-border);
+  }
+  .md-img {
+    max-width: 100%;
+  }
+  .md-img-placeholder {
+    font-family: var(--md-font-mono);
+    font-size: 0.9em;
+    color: var(--md-muted);
+    border: 1px dashed var(--md-border);
+    border-radius: 4px;
+    padding: 0 4px;
+  }
+  .md-table-wrap {
+    position: relative;
+    padding: 20px 26px 12px 24px;
+    overflow-x: auto;
+  }
+  .md-table {
+    border-collapse: collapse;
+  }
+  .md-table th,
+  .md-table td {
+    position: relative;
+    border: 1px solid var(--md-border);
+    padding: 4px 10px;
+  }
+  .md-table th {
+    font-weight: 600;
+    background: var(--md-code-bg);
+  }
+
+  /* Math (KaTeX), Mermaid diagrams, code highlighting. */
+  /*
+   * An inline formula is a clipped box, so a hostile formula (\raisebox{-500em}, \kern-1000em,
+   * \rule[-900em]) cannot make its line huge or draw over other lines. `overflow: clip` keeps the
+   * formula's own baseline (`hidden` would align the box bottom on the text baseline). Padding with
+   * the same negative margin moves the clip edge out by 0.5em / 0.25em without a layout change:
+   * accents, limits and italic corrections of normal formulas go a few pixels past their box.
+   */
+  .md-math:not(.md-math-block) {
+    display: inline-block;
+    max-width: 100%;
+    max-height: 6em;
+    padding: 0.5em 0.25em;
+    margin: -0.5em -0.25em;
+    overflow: clip;
+    contain: paint;
+  }
+  /*
+   * A `$$` block is bounded too: at most 30em high, the rest clipped. The tallest formula of
+   * corpus/m4/math-heavy.md is about 7em; a hostile one (\raisebox{-500em}) cannot make a huge widget.
+   */
+  .md-math-block {
+    display: block;
+    text-align: center;
+    padding: 0.4em 0;
+    max-height: 30em;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .md-math-pending,
+  .md-math-source {
+    font-family: var(--md-font-mono);
+    font-size: 0.9em;
+    color: var(--md-muted);
+    white-space: pre-wrap;
+  }
+  .md-mermaid {
+    display: block;
+    text-align: center;
+    padding: 0.5em 0;
+  }
+  .md-mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .md-mermaid-error .md-mermaid-message {
+    font-family: var(--md-font-mono);
+    font-size: 0.9em;
+    color: var(--md-error);
+    white-space: pre-wrap;
+    text-align: left;
+  }
+  .hljs-keyword,
+  .hljs-built_in,
+  .hljs-selector-tag {
+    color: var(--md-code-keyword);
+  }
+  .hljs-string,
+  .hljs-regexp,
+  .hljs-template-tag,
+  .hljs-template-variable {
+    color: var(--md-code-string);
+  }
+  .hljs-comment,
+  .hljs-quote {
+    color: var(--md-code-comment);
+    font-style: italic;
+  }
+  .hljs-number,
+  .hljs-literal,
+  .hljs-symbol,
+  .hljs-bullet {
+    color: var(--md-code-number);
+  }
+  .hljs-type,
+  .hljs-title,
+  .hljs-section,
+  .hljs-name,
+  .hljs-selector-class,
+  .hljs-selector-id {
+    color: var(--md-code-type);
+  }
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-property,
+  .hljs-variable,
+  .hljs-params {
+    color: var(--md-code-attr);
+  }
+  .hljs-meta,
+  .hljs-doctag,
+  .hljs-tag {
+    color: var(--md-code-meta);
+  }
+}
+
+@layer editor-ui {
+  :root {
+    --md-caret: var(--md-fg, #000);
+    --md-selection-bg: #b3d7ff;
+    --md-panel-bg: #f6f8fa;
+    --md-panel-fg: #1f2328;
+    --md-panel-border: #d1d9e0;
+    --md-panel-hover-bg: #e8eaed;
+    --md-panel-focus: #3574f0;
+    /* Search panel fonts: IDE-like UI font for labels and buttons, the IDE editor font in the fields. */
+    --md-panel-font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --md-panel-input-font: var(--md-ide-font, system-ui, sans-serif);
+    --md-panel-font-size: 13px;
+    --md-search-match: #ffd33d66;
+    --md-search-match-selected: #ff9f1a88;
+    --md-control-bg: #0969da;
+    --md-control-remove-bg: #59636e;
+    --md-control-fg: #ffffff;
+  }
+  :root[data-ide-theme='dark'] {
+    --md-selection-bg: #214283;
+    --md-panel-bg: #2b2d30;
+    --md-panel-fg: #dfe1e5;
+    --md-panel-border: #43454a;
+    --md-panel-hover-bg: #393b40;
+    --md-panel-focus: #3574f0;
+    --md-search-match: #32593d;
+    --md-search-match-selected: #7a5a1e;
+    --md-control-bg: #548af7;
+    --md-control-remove-bg: #9da0a8;
+    --md-control-fg: #1e1f22;
+  }
+
+  /*
+   * Page structure, caret, selection and search panel stay displayed and visible. `revert` = the
+   * browser default display of the element (CodeMirror's unlayered values still win over it).
+   */
+  html,
+  body,
+  #app,
+  .cm-content,
+  .cm-line,
+  .cm-layer,
+  .cm-selectionBackground,
+  .cm-panels,
+  .cm-panels *,
+  .md-table-btn {
+    display: revert;
+  }
+  html,
+  body,
+  #app,
+  .cm-editor,
+  .cm-scroller,
+  .cm-content,
+  .cm-layer,
+  .cm-cursor,
+  .cm-dropCursor,
+  .cm-selectionBackground,
+  .cm-panels,
+  .cm-panels * {
+    visibility: visible;
+    opacity: 1;
+  }
+  #app,
+  .cm-editor {
+    height: 100%;
+  }
+  .cm-cursor,
+  .cm-dropCursor {
+    border-left: 1.2px solid var(--md-caret);
+  }
+  .cm-selectionBackground {
+    background-color: var(--md-selection-bg);
+  }
+  .cm-panels,
+  .cm-panels * {
+    color: var(--md-panel-fg);
+    font-family: var(--md-panel-font);
+    font-size: var(--md-panel-font-size);
+  }
+  /* Search panel (Mod-F), compact like the IDE find bar; sizes CodeMirror sets are in theme.ts. */
+  .cm-panels .cm-textfield {
+    font-family: var(--md-panel-input-font);
+    min-width: 16em;
+    outline: none;
+  }
+  .cm-panels .cm-textfield:focus {
+    outline: 2px solid var(--md-panel-focus);
+    outline-offset: -1px;
+  }
+  .cm-panels input[type='checkbox'] {
+    accent-color: var(--md-panel-focus);
+    vertical-align: middle;
+  }
+  .cm-panels label {
+    white-space: nowrap;
+  }
+  .cm-panels .cm-search button[name='close'] {
+    color: var(--md-panel-fg);
+    cursor: pointer;
+  }
+
+  /* Table hover buttons (insert/remove row/column), shown while the pointer is over the table. */
+  .md-table-btn {
+    position: absolute;
+    z-index: 2;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 9px;
+    background: var(--md-control-bg);
+    color: var(--md-control-fg);
+    font: 600 13px/18px system-ui, sans-serif;
+    text-align: center;
+    cursor: pointer;
+    visibility: hidden;
+    opacity: 0.85;
+  }
+  .md-table-wrap:hover .md-table-btn {
+    visibility: visible;
+  }
+  .md-table-btn:hover {
+    opacity: 1;
+  }
+  .md-table-add::before {
+    content: '+';
+  }
+  .md-table-remove::before {
+    content: '×';
+  }
+  .md-table-remove {
+    background: var(--md-control-remove-bg);
+  }
+  .md-table-col-before {
+    left: -9px;
+    top: -20px;
+  }
+  .md-table-col-after {
+    right: -9px;
+    top: -20px;
+  }
+  .md-table-col-remove {
+    left: calc(50% - 9px);
+    top: -20px;
+  }
+  .md-table-row-before {
+    left: -22px;
+    top: -9px;
+  }
+  .md-table-row-after {
+    left: -22px;
+    bottom: -9px;
+  }
+  .md-table-row-remove {
+    right: -24px;
+    top: calc(50% - 9px);
+  }
+  /* Read-only document: no table controls. */
+  .cm-content[contenteditable='false'] .md-table-btn {
+    display: none;
+  }
+}

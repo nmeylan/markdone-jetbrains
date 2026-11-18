@@ -1,0 +1,114 @@
+{
+  "description": "v2: page boots, IDE opens and activates one document, user types 'X' at offset 6, IDE acks; then IDE flushes with nothing pending. Protocol 2.1: stamps are the per-document version counter (0 at open, +1 per DocumentEvent); ack/change carry the document length.",
+  "steps": [
+    {
+      "from": "page",
+      "fn": "ready",
+      "msg": {
+        "type": "ready",
+        "protocol": 2
+      }
+    },
+    {
+      "from": "ide",
+      "msg": {
+        "type": "open",
+        "docId": "0123456789abcdef0123456789abcdef",
+        "writable": true
+      }
+    },
+    {
+      "from": "page",
+      "fn": "ready",
+      "msg": {
+        "type": "opened",
+        "docId": "0123456789abcdef0123456789abcdef",
+        "docStamp": 0
+      }
+    },
+    {
+      "from": "ide",
+      "msg": {
+        "type": "activate",
+        "docId": "0123456789abcdef0123456789abcdef"
+      }
+    },
+    {
+      "from": "page",
+      "fn": "ready",
+      "msg": {
+        "type": "activated",
+        "docId": "0123456789abcdef0123456789abcdef"
+      }
+    },
+    {
+      "from": "page",
+      "fn": "patch",
+      "msg": {
+        "type": "patch",
+        "docId": "0123456789abcdef0123456789abcdef",
+        "seq": 1,
+        "baseStamp": 0,
+        "patches": [
+          {
+            "start": 6,
+            "end": 6,
+            "text": "X"
+          }
+        ]
+      }
+    },
+    {
+      "from": "ide",
+      "msg": {
+        "type": "ack",
+        "docId": "0123456789abcdef0123456789abcdef",
+        "seq": 1,
+        "stamp": 1,
+        "length": 16
+      }
+    },
+    {
+      "from": "ide",
+      "msg": {
+        "type": "flush",
+        "docId": "0123456789abcdef0123456789abcdef",
+        "seq": 2
+      }
+    },
+    {
+      "from": "page",
+      "fn": "ready",
+      "msg": {
+        "type": "viewport",
+        "docId": "0123456789abcdef0123456789abcdef",
+        "top": 0,
+        "anchor": 0,
+        "head": 0
+      }
+    },
+    {
+      "from": "page",
+      "fn": "patch",
+      "msg": {
+        "type": "patch",
+        "docId": "0123456789abcdef0123456789abcdef",
+        "seq": 2,
+        "baseStamp": 1,
+        "patches": []
+      }
+    },
+    {
+      "from": "ide",
+      "msg": {
+        "type": "ack",
+        "docId": "0123456789abcdef0123456789abcdef",
+        "seq": 2,
+        "stamp": 1,
+        "length": 16
+      }
+    }
+  ],
+  "initialText": "# Title\n\nHello\n",
+  "finalText": "# TitlXe\n\nHello\n"
+}

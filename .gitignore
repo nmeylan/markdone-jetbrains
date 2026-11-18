@@ -1,0 +1,17 @@
+# Gradle / IntelliJ Platform
+.gradle/
+build/
+.intellijPlatform/
+.kotlin/
+.idea/
+*.iml
+
+# Web
+web/node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+web/blob-report/
+
+# Generated corpus file
+src/test/resources/corpus/huge.md

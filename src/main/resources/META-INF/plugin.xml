@@ -1,0 +1,103 @@
+<idea-plugin>
+    <id>ch.nmeylan.markdone</id>
+    <name>Markdone</name>
+    <vendor>markdone</vendor>
+    <description><![CDATA[
+    WYSIWYG editor for Markdown files: one tab with a Source mode (platform text editor)
+    and an Edit mode (formatted view). Work in progress.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <!-- JBCefApp (WebEditor, SharedBrowserService) lives in the bundled JCEF plugin. -->
+    <depends>com.intellij.modules.jcef</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileEditorProvider implementation="ch.nmeylan.markdone.editor.MdFileEditorProvider"/>
+        <actionPromoter implementation="ch.nmeylan.markdone.actions.PageUndoPromoter"/>
+        <!-- Settings → Tools: application settings and the project CSS path of the project. -->
+        <projectConfigurable parentId="tools" instance="ch.nmeylan.markdone.settings.MdConfigurable" id="ch.nmeylan.markdone.settings"
+                             displayName="Markdone"/>
+        <!-- Files above the large-file limit: Source mode only, with this banner. -->
+        <editorNotificationProvider implementation="ch.nmeylan.markdone.editor.LargeFileNotificationProvider"/>
+        <!-- Read-only Markdown files: gray tab (last: a color of the File Colors scopes comes first). -->
+        <editorTabColorProvider implementation="ch.nmeylan.markdone.editor.ReadOnlyTabColorProvider" order="last"/>
+    </extensions>
+
+    <projectListeners>
+        <!-- tabSwitchMs: selection of a tab in Edit mode → `activated`. -->
+        <listener class="ch.nmeylan.markdone.editor.TabSwitchPerfListener"
+                  topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+    </projectListeners>
+
+    <actions>
+        <action id="ch.nmeylan.markdone.ToggleMode" class="ch.nmeylan.markdone.actions.ToggleModeAction"
+                text="Toggle Markdown Source/Edit Mode"
+                description="Switch the Markdown tab between Source and Edit mode">
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt shift W"/>
+        </action>
+        <!-- Undo/redo while the Edit-mode page has the focus: flush first. -->
+        <action id="ch.nmeylan.markdone.PageUndo" class="ch.nmeylan.markdone.actions.PageUndoAction" use-shortcut-of="$Undo"
+                text="Undo in Markdown Edit Mode" description="Send the page edits, then undo"/>
+        <action id="ch.nmeylan.markdone.PageRedo" class="ch.nmeylan.markdone.actions.PageRedoAction" use-shortcut-of="$Redo"
+                text="Redo in Markdown Edit Mode" description="Send the page edits, then redo"/>
+        <!-- Edit-mode context menu. Other plugins can add actions to this group. -->
+        <group id="markdone.EditContextMenu" text="Markdown Edit Mode" popup="false">
+            <action id="ch.nmeylan.markdone.PageCut" class="ch.nmeylan.markdone.actions.PageCutAction" text="Cut"
+                    description="Cut the selected Markdown source"/>
+            <action id="ch.nmeylan.markdone.PageCopy" class="ch.nmeylan.markdone.actions.PageCopyAction" text="Copy"
+                    description="Copy the selected Markdown source"/>
+            <action id="ch.nmeylan.markdone.PagePaste" class="ch.nmeylan.markdone.actions.PagePasteAction" text="Paste"
+                    description="Paste the clipboard text"/>
+            <separator/>
+            <action id="ch.nmeylan.markdone.PageSelectAll" class="ch.nmeylan.markdone.actions.PageSelectAllAction" text="Select All"
+                    description="Select the whole document"/>
+            <separator/>
+            <reference ref="ch.nmeylan.markdone.ToggleMode"/>
+            <separator/>
+            <!-- Edit-mode zoom and built-in style. -->
+            <action id="ch.nmeylan.markdone.ZoomIn" class="ch.nmeylan.markdone.actions.ZoomInAction" text="Zoom In"
+                    description="Make the Markdown Edit mode text larger"/>
+            <action id="ch.nmeylan.markdone.ZoomOut" class="ch.nmeylan.markdone.actions.ZoomOutAction" text="Zoom Out"
+                    description="Make the Markdown Edit mode text smaller"/>
+            <action id="ch.nmeylan.markdone.ZoomReset" class="ch.nmeylan.markdone.actions.ZoomResetAction" text="Reset Zoom"
+                    description="Show the Markdown Edit mode text at its normal size"/>
+            <group id="markdone.EditContextMenu.Style" text="Style" popup="true">
+                <action id="ch.nmeylan.markdone.StyleDefault" class="ch.nmeylan.markdone.actions.StyleDefaultAction" text="Default"
+                        description="Use the default Markdown Edit mode style"/>
+                <action id="ch.nmeylan.markdone.StyleCompact" class="ch.nmeylan.markdone.actions.StyleCompactAction" text="Compact"
+                        description="Use the compact Markdown Edit mode style"/>
+                <action id="ch.nmeylan.markdone.StyleSerif" class="ch.nmeylan.markdone.actions.StyleSerifAction" text="Serif"
+                        description="Use the serif Markdown Edit mode style"/>
+            </group>
+            <separator/>
+            <!-- Shown when the menu opens in a table. -->
+            <group id="markdone.EditContextMenu.Table" class="ch.nmeylan.markdone.actions.PageTableGroup" text="Table" popup="true">
+                <action id="ch.nmeylan.markdone.TableInsertRowAbove" class="ch.nmeylan.markdone.actions.TableInsertRowAboveAction"
+                        text="Insert Row Above" description="Insert an empty row above this row"/>
+                <action id="ch.nmeylan.markdone.TableInsertRowBelow" class="ch.nmeylan.markdone.actions.TableInsertRowBelowAction"
+                        text="Insert Row Below" description="Insert an empty row below this row"/>
+                <action id="ch.nmeylan.markdone.TableInsertColumnLeft" class="ch.nmeylan.markdone.actions.TableInsertColumnLeftAction"
+                        text="Insert Column Left" description="Insert an empty column on the left of this column"/>
+                <action id="ch.nmeylan.markdone.TableInsertColumnRight" class="ch.nmeylan.markdone.actions.TableInsertColumnRightAction"
+                        text="Insert Column Right" description="Insert an empty column on the right of this column"/>
+                <separator/>
+                <action id="ch.nmeylan.markdone.TableRemoveRow" class="ch.nmeylan.markdone.actions.TableRemoveRowAction"
+                        text="Remove Row" description="Remove this row (not the header row)"/>
+                <action id="ch.nmeylan.markdone.TableRemoveColumn" class="ch.nmeylan.markdone.actions.TableRemoveColumnAction"
+                        text="Remove Column" description="Remove this column (not the only column)"/>
+                <separator/>
+                <action id="ch.nmeylan.markdone.TableAlignLeft" class="ch.nmeylan.markdone.actions.TableAlignLeftAction"
+                        text="Align Left" description="Align this column to the left"/>
+                <action id="ch.nmeylan.markdone.TableAlignCenter" class="ch.nmeylan.markdone.actions.TableAlignCenterAction"
+                        text="Align Center" description="Center this column"/>
+                <action id="ch.nmeylan.markdone.TableAlignRight" class="ch.nmeylan.markdone.actions.TableAlignRightAction"
+                        text="Align Right" description="Align this column to the right"/>
+                <action id="ch.nmeylan.markdone.TableAlignNone" class="ch.nmeylan.markdone.actions.TableAlignNoneAction"
+                        text="No Alignment" description="Remove the alignment of this column"/>
+                <separator/>
+                <action id="ch.nmeylan.markdone.TableReformat" class="ch.nmeylan.markdone.actions.TableReformatAction"
+                        text="Reformat Table" description="Pad the cells to the column widths"/>
+            </group>
+        </group>
+    </actions>
+</idea-plugin>

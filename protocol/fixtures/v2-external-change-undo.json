@@ -1,0 +1,114 @@
+{
+  "description": "v2: an external IDE change arrives as sequential changes; then the user presses undo in the page, the IDE flushes, runs undo and sends the result back with the selection. Protocol 2.1: version counter (two DocumentEvents \u2192 2; undo \u2192 3); length in ack/change.",
+  "steps": [
+    {
+      "from": "page",
+      "fn": "ready",
+      "msg": {
+        "type": "ready",
+        "protocol": 2
+      }
+    },
+    {
+      "from": "ide",
+      "msg": {
+        "type": "open",
+        "docId": "fedcba9876543210fedcba9876543210",
+        "writable": true
+      }
+    },
+    {
+      "from": "page",
+      "fn": "ready",
+      "msg": {
+        "type": "opened",
+        "docId": "fedcba9876543210fedcba9876543210",
+        "docStamp": 0
+      }
+    },
+    {
+      "from": "ide",
+      "msg": {
+        "type": "change",
+        "docId": "fedcba9876543210fedcba9876543210",
+        "stamp": 2,
+        "changes": [
+          {
+            "from": 0,
+            "to": 0,
+            "insert": "A"
+          },
+          {
+            "from": 2,
+            "to": 3,
+            "insert": ""
+          }
+        ],
+        "length": 4
+      }
+    },
+    {
+      "from": "page",
+      "fn": "command",
+      "msg": {
+        "type": "command",
+        "docId": "fedcba9876543210fedcba9876543210",
+        "name": "undo"
+      }
+    },
+    {
+      "from": "ide",
+      "msg": {
+        "type": "flush",
+        "docId": "fedcba9876543210fedcba9876543210",
+        "seq": 1
+      }
+    },
+    {
+      "from": "page",
+      "fn": "patch",
+      "msg": {
+        "type": "patch",
+        "docId": "fedcba9876543210fedcba9876543210",
+        "seq": 1,
+        "baseStamp": 2,
+        "patches": []
+      }
+    },
+    {
+      "from": "ide",
+      "msg": {
+        "type": "ack",
+        "docId": "fedcba9876543210fedcba9876543210",
+        "seq": 1,
+        "stamp": 2,
+        "length": 4
+      }
+    },
+    {
+      "from": "ide",
+      "msg": {
+        "type": "change",
+        "docId": "fedcba9876543210fedcba9876543210",
+        "stamp": 3,
+        "changes": [
+          {
+            "from": 2,
+            "to": 2,
+            "insert": "b"
+          }
+        ],
+        "selection": {
+          "anchor": 3,
+          "head": 3
+        },
+        "length": 5
+      }
+    }
+  ],
+  "initialText": "abcd",
+  "textAfterStep": {
+    "3": "Aacd",
+    "8": "Aabcd"
+  }
+}

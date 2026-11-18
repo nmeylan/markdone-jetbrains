@@ -1,0 +1,113 @@
+{
+  "_comment": "PLAN.md \u00a77.1 budget (revision 4). perf-report fails if a measured value exceeds its budget by more than 10 %. null = measure only (huge-file targets become budgets in M3).",
+  "metrics": {
+    "startupImpactMs": {
+      "unit": "ms",
+      "budget": 2
+    },
+    "editModeColdOpenMs": {
+      "unit": "ms",
+      "budget": 1000
+    },
+    "editModeWarmOpen5000LinesMs": {
+      "unit": "ms",
+      "budget": 150
+    },
+    "tabSwitchMs": {
+      "unit": "ms",
+      "budget": 50
+    },
+    "modeSwitchNoChangeMs": {
+      "unit": "ms",
+      "budget": 50
+    },
+    "keystrokeProcessing5000LinesMs": {
+      "unit": "ms",
+      "budget": 16
+    },
+    "keystrokeToFrame5000LinesMs": {
+      "unit": "ms",
+      "budget": 33
+    },
+    "keystrokeProcessingHugeMs": {
+      "unit": "ms",
+      "budget": 16
+    },
+    "keystrokeToFrameHugeMs": {
+      "unit": "ms",
+      "budget": 33
+    },
+    "keystrokeToDocumentMs": {
+      "unit": "ms",
+      "budget": 36.7
+    },
+    "patchApplyEdtMs": {
+      "unit": "ms",
+      "budget": 5
+    },
+    "undoRoundTripMs": {
+      "unit": "ms",
+      "budget": 33
+    },
+    "externalChangeMs": {
+      "unit": "ms",
+      "budget": 16
+    },
+    "jumpToEndHugeMs": {
+      "unit": "ms",
+      "budget": 100
+    },
+    "hugeEditModeOpenMs": {
+      "unit": "ms",
+      "budget": 1000
+    },
+    "cssSwapMs": {
+      "unit": "ms",
+      "budget": 50
+    },
+    "initialJsBundleGzipKB": {
+      "unit": "KB",
+      "budget": 250
+    },
+    "rendererPss3DocsMB": {
+      "unit": "MB",
+      "budget": 200
+    },
+    "jsHeapPerDocMediumMB": {
+      "unit": "MB",
+      "budget": 10
+    },
+    "webKeystrokeProcessingMathHeavyMs": {
+      "unit": "ms",
+      "budget": 16
+    },
+    "webKeystrokeToFrameMathHeavyMs": {
+      "unit": "ms",
+      "budget": 33
+    },
+    "webKeystrokeProcessingMermaidHeavyMs": {
+      "unit": "ms",
+      "budget": 16
+    },
+    "webKeystrokeToFrameMermaidHeavyMs": {
+      "unit": "ms",
+      "budget": 33
+    },
+    "webKeystrokeProcessingCodeHeavyMs": {
+      "unit": "ms",
+      "budget": 16
+    },
+    "webKeystrokeToFrameCodeHeavyMs": {
+      "unit": "ms",
+      "budget": 33
+    },
+    "webKeystrokeProcessingCodeBlockMs": {
+      "unit": "ms",
+      "budget": 16
+    },
+    "webKeystrokeToFrameCodeBlockMs": {
+      "unit": "ms",
+      "budget": 33
+    }
+  }
+}
