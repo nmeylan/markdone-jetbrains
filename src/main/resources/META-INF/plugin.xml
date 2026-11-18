@@ -1,10 +1,38 @@
 <idea-plugin>
     <id>ch.nmeylan.markdone</id>
     <name>Markdone</name>
-    <vendor>markdone</vendor>
+    <vendor>Nicolas Meylan</vendor>
     <description><![CDATA[
-    WYSIWYG editor for Markdown files: one tab with a Source mode (platform text editor)
-    and an Edit mode (formatted view). Work in progress.
+    <p>Fast, private Markdown editor: one tab with a <b>Source</b> mode (platform text editor)
+    and an <b>Edit</b> mode (live preview that you can edit). No network access: all scripts are bundled.</p>
+    <p><b>Editor</b></p>
+    <ul>
+      <li>Toggle Source/Edit mode with <code>Ctrl+Alt+Shift+W</code> or the context menu</li>
+      <li>Markdown markers show only on the lines that the caret or selection touches</li>
+      <li>One IDE undo stack for both modes; find in the page with <code>Ctrl+F</code></li>
+      <li>Ctrl/Cmd-click goes to that line in Source mode; Alt-click adds a cursor</li>
+      <li>Read-only files open read-only in Edit mode</li>
+      <li>Optional Vim key bindings in Edit mode (off by default); key mappings are taken from your <code>.ideavimrc</code></li>
+    </ul>
+    <p><b>Rendering</b></p>
+    <ul>
+      <li>Headings, emphasis, links, quotes, lists, task lists, footnotes, front matter</li>
+      <li>Tables as widgets, with row/column actions, alignment and reformat</li>
+      <li>Images with relative paths and <code>data:</code> (remote images are off by default)</li>
+      <li>Math with KaTeX, Mermaid diagrams (strict mode), code highlighting</li>
+      <li>Raw HTML is never executed; it is shown as text</li>
+    </ul>
+    <p><b>Styling</b></p>
+    <ul>
+      <li>Default, Compact and Serif styles, in light and dark, that follow the IDE theme</li>
+      <li>Global custom CSS and project CSS (<code>.markdone/style.css</code>, trusted projects only), applied live</li>
+      <li>Zoom from 50 to 300 %</li>
+    </ul>
+    <p><b>Big files</b></p>
+    <ul>
+      <li>Only the visible part is drawn: a 20 MB file opens in Edit mode in about 0.4 s</li>
+    </ul>
+    <p>Settings: <i>Settings | Tools | Markdone</i>.</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>

@@ -46,6 +46,34 @@ intellijPlatform {
         }
     }
 
+    /*
+     * Secrets: CI passes environment variables. On a developer machine, the key and chain
+     * are PEM files named in ~/.gradle/gradle.properties (markdone.signing.keyFile, markdone.signing.chainFile),
+     * and the passwords come from the OS secret store (`secret-tool`, service "markdone").
+     */
+    fun secret(env: String, key: String) = providers.environmentVariable(env).orElse(
+        providers.exec { commandLine("secret-tool", "lookup", "service", "markdone", "key", key) }
+            .standardOutput.asText.map { it.trim() }
+    )
+
+    signing {
+        if (providers.environmentVariable("CERTIFICATE_CHAIN").isPresent) {
+            certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        } else {
+            providers.gradleProperty("markdone.signing.chainFile").orNull?.let { certificateChainFile = file(it) }
+        }
+        if (providers.environmentVariable("PRIVATE_KEY").isPresent) {
+            privateKey = providers.environmentVariable("PRIVATE_KEY")
+        } else {
+            providers.gradleProperty("markdone.signing.keyFile").orNull?.let { privateKeyFile = file(it) }
+        }
+        password = secret("PRIVATE_KEY_PASSWORD", "signing-password")
+    }
+
+    publishing {
+        token = secret("PUBLISH_TOKEN", "publish-token")
+    }
+
     pluginVerification {
         ides {
             recommended()

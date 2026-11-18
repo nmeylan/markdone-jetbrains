@@ -27,6 +27,7 @@ I wanted one tab where I edit the formatted text directly, that stays fast on a 
 - Undo/redo (`Ctrl+Z` / `Ctrl+Shift+Z`) use the IDE undo stack in both modes
 - Find in the page (`Ctrl+F`), styled like the IDE find bar
 - Read-only files open read-only in Edit mode; their tab is gray
+- Vim key bindings in Edit mode (setting, off by default): CodeMirror's Vim emulation, not IdeaVim; it uses the `map` commands and `let mapleader` of your `.ideavimrc`, and reports the lines it skips
 
 **Rendering**
 - Headings, emphasis, strike, inline code, links, quotes, lists, task lists, rules, footnotes, front matter
@@ -60,6 +61,7 @@ I wanted one tab where I edit the formatted text directly, that stays fast on a 
 - Large-file limit (1–20 MB)
 - Style, zoom (50–300 %)
 - Feature toggles: Math, Mermaid, Code highlighting
+- Vim key bindings
 
 # Prerequisites
 
@@ -106,7 +108,28 @@ Check the plugin before you share it:
 ./gradlew verifyPlugin            # JetBrains Plugin Verifier against the recommended IDEs
 ```
 
-Signing and publishing to the Marketplace are not configured yet.
+## Sign and publish
+
+The first upload to the Marketplace is manual (upload the signed zip on the plugin page). Later versions can go out from a GitHub Actions workflow or from your machine.
+
+**GitHub Actions** (`.github/workflows/release.yml`): set `pluginVersion`, then push a tag `v<version>`. The workflow checks that the tag matches `pluginVersion`, runs `scripts/check-full.sh`, signs, publishes and creates a GitHub Release with the signed zip. In the repository, create an environment `release` (add required reviewers to approve each release) with these secrets: `CERTIFICATE_CHAIN` and `PRIVATE_KEY` (the PEM file contents), `PRIVATE_KEY_PASSWORD`, `PUBLISH_TOKEN` (Marketplace token).
+
+**From your machine**: keep the PEM files outside the repository and name them in `~/.gradle/gradle.properties`:
+
+```
+markdone.signing.keyFile=/path/to/private_encrypted.pem
+markdone.signing.chainFile=/path/to/chain.crt
+```
+
+Store the key password and the Marketplace token in the OS secret store:
+
+```bash
+secret-tool store --label="markdone signing password" service markdone key signing-password
+secret-tool store --label="markdone publish token" service markdone key publish-token
+./gradlew signPlugin publishPlugin
+```
+
+Environment variables (`PRIVATE_KEY_PASSWORD`, `PUBLISH_TOKEN`, `PRIVATE_KEY`, `CERTIFICATE_CHAIN`) take priority over these local settings.
 
 # Test
 
@@ -142,3 +165,7 @@ Put your CSS in the settings page (global) or in `.markdone/style.css` in the pr
 ```
 
 The stable classes and variables are listed in [docs/css.md](docs/css.md). URLs in user CSS can point only to files of the project.
+
+# License
+
+Apache License 2.0. See [LICENSE](LICENSE).
