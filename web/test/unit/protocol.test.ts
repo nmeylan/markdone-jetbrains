@@ -20,9 +20,9 @@ describe('validateIdeMessage (protocol v2.4)', () => {
     { type: 'writable', docId: id, writable: false },
     { type: 'theme', dark: true, fontFamily: 'Inter', fontSizePx: 13, zoom: 1 },
     { type: 'css', global: '', project: null },
-    { type: 'settings', remoteImages: true, math: true, mermaid: false, highlight: true, style: 'default' },
-    { type: 'settings', remoteImages: false, math: false, mermaid: true, highlight: false, style: 'compact' },
-    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, style: 'serif' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: false, highlight: true, softBreaks: true, style: 'default' },
+    { type: 'settings', remoteImages: false, math: false, mermaid: true, highlight: false, softBreaks: true, style: 'compact' },
+    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'serif' },
   ])('accepts $type', (msg) => {
     expect(validateIdeMessage(msg)).toBe(msg);
   });
@@ -64,14 +64,14 @@ describe('validateIdeMessage (protocol v2.4)', () => {
     { type: 'activate', docId: id, top: 0, scroll: 0 },
     // Settings (2.3): all five fields, exact key set, known style names only.
     { type: 'settings', remoteImages: true },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, style: 'default', zoom: 1 },
-    { type: 'settings', remoteImages: true, math: 'yes', mermaid: true, highlight: true, style: 'default' },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: 1, style: 'default' },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, style: 'Compact' },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, style: 'dark' },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, style: null },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, style: 'toString' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', zoom: 1 },
+    { type: 'settings', remoteImages: true, math: 'yes', mermaid: true, highlight: true, softBreaks: true, style: 'default' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: 1, softBreaks: true, style: 'default' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'Compact' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'dark' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: null },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'toString' },
   ])('rejects %j', (msg) => {
     expect(validateIdeMessage(msg)).toBeNull();
   });

@@ -15,9 +15,10 @@ interface Settings {
   math: boolean;
   mermaid: boolean;
   highlight: boolean;
+  softBreaks: boolean;
   style: 'default' | 'compact' | 'serif';
 }
-const DEFAULTS: Settings = { remoteImages: false, math: true, mermaid: true, highlight: true, style: 'default' };
+const DEFAULTS: Settings = { remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default' };
 
 /** Sends a full 2.3 `settings` message; the page applies it in the next frame (after a scroll snapshot). */
 async function settings(page: Page, s: Partial<Settings>): Promise<void> {
@@ -426,5 +427,25 @@ test('zoom: a theme with another zoom changes the font size and keeps the first 
     top = now;
   }
   console.log(`zoom theme, first visible line deltas: ${deltas.join(' ')}`);
+  expect(await page.evaluate(() => window.markdone?.__debug.docChanges('d1'))).toBe(0);
+});
+
+test('settings: softBreaks off joins single line feeds; hard breaks stay; the paragraph with the caret shows its source', async ({ page, guard }) => {
+  void guard;
+  const text = 'one\ntwo\n\nhard  \nbreak\n\n> q1\n> q2\n\nend\n';
+  await openHarness(page, text);
+  await caret(page, text.length);
+  await frames(page, 2);
+  const lineTexts = () => page.locator('.cm-line').evaluateAll((els) => els.map((e) => e.textContent));
+  expect(await lineTexts()).toEqual(['one', 'two', '', 'hard  ', 'break', '', 'q1', 'q2', '', 'end', '']);
+  await settings(page, { softBreaks: false });
+  expect(await lineTexts()).toEqual(['one two', '', 'hard  ', 'break', '', 'q1 q2', '', 'end', '']);
+  // Caret in a paragraph: its source shows.
+  await caret(page, 1);
+  await frames(page, 2);
+  expect((await lineTexts()).slice(0, 2)).toEqual(['one', 'two']);
+  await caret(page, text.length);
+  await settings(page, { softBreaks: true });
+  expect(await lineTexts()).toEqual(['one', 'two', '', 'hard  ', 'break', '', 'q1', 'q2', '', 'end', '']);
   expect(await page.evaluate(() => window.markdone?.__debug.docChanges('d1'))).toBe(0);
 });

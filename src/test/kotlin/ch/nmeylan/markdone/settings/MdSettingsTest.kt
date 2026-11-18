@@ -32,7 +32,7 @@ class MdSettingsTest : BasePlatformTestCase() {
         assertFalse(settings.isAboveLargeFileLimit(21 * mib - 1))
         assertTrue(settings.isAboveLargeFileLimit(21 * mib))
         assertEquals(MdStyle.DEFAULT, settings.style)
-        assertTrue(settings.math && settings.mermaid && settings.highlight)
+        assertTrue(settings.math && settings.mermaid && settings.highlight && settings.softBreaks)
         assertEquals(1.0, settings.zoom)
         assertEquals(".markdone/style.css", MdProjectSettings.getInstance(project).projectCssPath)
     }
@@ -45,6 +45,7 @@ class MdSettingsTest : BasePlatformTestCase() {
         settings.math = false
         settings.mermaid = false
         settings.highlight = false
+        settings.softBreaks = false
         settings.zoomIn()
         val xml = XmlSerializer.serialize(settings.state)
         val copy = MdSettings()
@@ -53,7 +54,7 @@ class MdSettingsTest : BasePlatformTestCase() {
         assertTrue(copy.remoteImages)
         assertEquals(3, copy.largeFileLimitMb)
         assertEquals(MdStyle.SERIF, copy.style)
-        assertFalse(copy.math || copy.mermaid || copy.highlight)
+        assertFalse(copy.math || copy.mermaid || copy.highlight || copy.softBreaks)
         assertEquals(1.1, copy.zoom)
     }
 

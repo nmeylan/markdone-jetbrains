@@ -26,7 +26,7 @@ export type IdeMessage =
   | { type: 'writable'; docId: string; writable: boolean }
   | { type: 'theme'; dark: boolean; fontFamily: string; fontSizePx: number; zoom: number }
   | { type: 'css'; global: string; project: string | null }
-  | { type: 'settings'; remoteImages: boolean; math: boolean; mermaid: boolean; highlight: boolean; style: MdStyle };
+  | { type: 'settings'; remoteImages: boolean; math: boolean; mermaid: boolean; highlight: boolean; softBreaks: boolean; style: MdStyle };
 
 /** Built-in styles: `<html data-md-style="...">`. */
 export type MdStyle = 'default' | 'compact' | 'serif';
@@ -103,7 +103,7 @@ const FIELDS: Record<IdeMessage['type'], Record<string, FieldKind>> = {
   writable: { docId: 'string', writable: 'boolean' },
   theme: { dark: 'boolean', fontFamily: 'string', fontSizePx: 'number', zoom: 'number' },
   css: { global: 'string', project: 'string|null' },
-  settings: { remoteImages: 'boolean', math: 'boolean', mermaid: 'boolean', highlight: 'boolean', style: 'style' },
+  settings: { remoteImages: 'boolean', math: 'boolean', mermaid: 'boolean', highlight: 'boolean', softBreaks: 'boolean', style: 'style' },
 };
 
 const isOffset = (v: unknown): boolean => Number.isSafeInteger(v) && (v as number) >= 0;

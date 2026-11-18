@@ -135,6 +135,7 @@ Through `command`:
 { type: "css",      global: string, project: string | null }   // M2
 { type: "settings", remoteImages: boolean,                        // M2 (default false)
                     math: boolean, mermaid: boolean, highlight: boolean,  // M5 feature toggles (default true)
+                    softBreaks: boolean,                                  // single line feed: line break (true, default) or space
                     style: "default" | "compact" | "serif" }              // M5 built-in style (default "default")
 ```
 

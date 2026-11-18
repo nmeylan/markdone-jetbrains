@@ -63,13 +63,14 @@ Set them on `:root`. All colours are CSS colours, all fonts are `font-family` li
 | `--md-font-body` | IDE editor font, then `system-ui, sans-serif` | Text font |
 | `--md-font-mono` | `ui-monospace, 'JetBrains Mono', monospace` | Inline code, code blocks, front matter, table source, raw HTML |
 | `--md-font-size` | IDE editor font size × zoom | Base font size |
-| `--md-line-height` | `1.6` | Line height |
-| `--md-max-width` | `916px` | Width of the text column (it is centred) |
+| `--md-line-height` | `1.8` | Line height |
+| `--md-code-line-height` | `1.6` | Line height of code block lines |
+| `--md-max-width` | `none` | Maximum width of the text column (it is centred) |
 | `--md-fg` | `#1f2328` | Text colour |
 | `--md-bg` | `#ffffff` | Background |
 | `--md-accent` | `#0969da` | Footnotes |
 | `--md-muted` | `#59636e` | Quotes, bullets, list numbers, front matter, raw HTML |
-| `--md-heading-fg` | `#1f2328` | Heading colour |
+| `--md-heading-fg` | `#0969da` | Heading colour |
 | `--md-heading-font` | `var(--md-font-body)` | Heading font |
 | `--md-heading-weight` | `600` | Heading weight |
 | `--md-h1-size` … `--md-h6-size` | `2em`, `1.5em`, `1.25em`, `1.1em`, `1em`, `1em` | Heading font size (relative to `--md-font-size`) |
@@ -88,7 +89,7 @@ Set them on `:root`. All colours are CSS colours, all fonts are `font-family` li
 | `--md-code-attr` | `#8250df` | Attributes, properties, variables, parameters (`.hljs-attr`, `.hljs-attribute`, `.hljs-property`, `.hljs-variable`, `.hljs-params`) |
 | `--md-code-meta` | `#116329` | Meta, doc tags, tags (`.hljs-meta`, `.hljs-doctag`, `.hljs-tag`) |
 
-The dark theme sets other values for the colours. To change one theme only, use the selector
+The light colours follow GitHub Light; the dark theme sets other values (Tokyo Night). To change one theme only, use the selector
 `:root[data-ide-theme="dark"]` or `:root[data-ide-theme="light"]`; the page sets this attribute
 from the IDE theme.
 
@@ -117,6 +118,7 @@ colours do not change, so each style has the light and the dark colours of the I
 | `--md-font-body` | (default) | `Charter, 'Bitstream Charter', 'Iowan Old Style', Georgia, Cambria, 'Noto Serif', 'DejaVu Serif', serif` |
 | `--md-font-size` | IDE size × zoom × 0.93 | IDE size × zoom × 1.15 |
 | `--md-line-height` | `1.4` | `1.75` |
+| `--md-code-line-height` | `1.4` | `1.75` |
 | `--md-max-width` | `1100px` | `720px` |
 | `--md-heading-weight` | (default) | `700` |
 | `--md-h1-size` … `--md-h4-size` | `1.5em`, `1.3em`, `1.15em`, `1.05em` | `2.2em`, `1.7em`, `1.35em`, `1.15em` |

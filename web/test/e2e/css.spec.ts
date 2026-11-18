@@ -247,7 +247,7 @@ for (const [file, name] of [
         await page.evaluate(
           ([s, d]) => {
             window.__harness.send({ type: 'theme', dark: d, fontFamily: 'sans-serif', fontSizePx: 14, zoom: 1 });
-            window.__harness.send({ type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, style: s });
+            window.__harness.send({ type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: s });
           },
           [style, dark] as const,
         );

@@ -177,7 +177,7 @@ export const refresh = StateEffect.define<null>();
  * does not render (math: the `$` markers as `md-marker`; Mermaid: a code block; code: no
  * highlighting), and its lazy chunk is not loaded.
  */
-const features = { math: true, mermaid: true, highlight: true };
+const features = { math: true, mermaid: true, highlight: true, softBreaks: true };
 
 /**
  * Increases on each change of the render settings. The block field keeps the value it was built
@@ -190,6 +190,8 @@ export interface RenderSettings {
   math: boolean;
   mermaid: boolean;
   highlight: boolean;
+  /** Off: a single line feed inside a paragraph shows as a space (the lines flow together). */
+  softBreaks: boolean;
 }
 
 /**
@@ -198,11 +200,12 @@ export interface RenderSettings {
  * before they are shown (`withCurrentSettings`).
  */
 export function setRenderSettings(s: RenderSettings): boolean {
-  if (s.remoteImages === remoteImages && s.math === features.math && s.mermaid === features.mermaid && s.highlight === features.highlight) return false;
+  if (s.remoteImages === remoteImages && s.math === features.math && s.mermaid === features.mermaid && s.highlight === features.highlight && s.softBreaks === features.softBreaks) return false;
   remoteImages = s.remoteImages;
   features.math = s.math;
   features.mermaid = s.mermaid;
   features.highlight = s.highlight;
+  features.softBreaks = s.softBreaks;
   generation++;
   return true;
 }
@@ -881,6 +884,39 @@ function blockWidget(state: EditorState, node: SyntaxNode): Decoration | null {
   return Decoration.replace({ widget: new MermaidWidget(blockText(state, node, body.from, body.to), darkTheme), block: true });
 }
 
+class SoftBreakWidget extends WidgetType {
+  override eq(): boolean {
+    return true;
+  }
+  override toDOM(): HTMLElement {
+    const el = document.createElement('span');
+    el.textContent = ' ';
+    return el;
+  }
+}
+
+const softBreak = Decoration.replace({ widget: new SoftBreakWidget() });
+
+/**
+ * Replaces each single line feed of `para` (and the quote marks and indentation of the next line)
+ * with a space. A hard break (`HardBreak` ends after its line feed) stays. A paragraph that the
+ * caret or the selection touches shows its source.
+ */
+function softBreakDecorations(state: EditorState, para: SyntaxNode, out: Range<Decoration>[]): void {
+  if (touches(state, para.from, para.to)) return;
+  const hardEnds = new Set<number>();
+  for (let c = para.firstChild; c; c = c.nextSibling) if (c.name === 'HardBreak') hardEnds.add(c.to);
+  const { doc } = state;
+  const last = doc.lineAt(para.to).number;
+  for (let n = doc.lineAt(para.from).number; n < last; n++) {
+    const line = doc.line(n);
+    if (hardEnds.has(line.to + 1)) continue;
+    const next = doc.line(n + 1);
+    const lead = next.text.length - next.text.replace(/^[ \t>]+/, '').length;
+    out.push(softBreak.range(line.to, next.from + lead));
+  }
+}
+
 function buildTables(state: EditorState, windows: Win[]): DecorationSet {
   const out: Range<Decoration>[] = [];
   const done = new Set<number>();
@@ -897,6 +933,11 @@ function buildTables(state: EditorState, windows: Win[]): DecorationSet {
             const deco = blockWidget(state, ref.node);
             if (deco) out.push(deco.range(ref.from, ref.to));
           }
+          done.add(ref.from);
+          return false;
+        }
+        if (ref.name === 'Paragraph') {
+          if (!features.softBreaks && !done.has(ref.from)) softBreakDecorations(state, ref.node, out);
           done.add(ref.from);
           return false;
         }

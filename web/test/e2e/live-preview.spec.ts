@@ -105,7 +105,7 @@ test('images: relative -> /file/ request, data: as is, remote placeholder withou
     return route.fulfill({ status: 200, headers: { 'Content-Type': 'image/png' }, body: png });
   });
   guard.expectedViolations.push('img-src https://img.example/remote.png');
-  await page.evaluate(() => window.__harness.send({ type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, style: 'default' }));
+  await page.evaluate(() => window.__harness.send({ type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default' }));
   await expect(page.locator('img.md-img[alt="remote"]')).toHaveAttribute('src', 'https://img.example/remote.png');
   await expect(page.locator('.md-img-placeholder')).toHaveText(['file:///etc/passwd', 'javascript:alert(1)']);
   await expect
@@ -113,7 +113,7 @@ test('images: relative -> /file/ request, data: as is, remote placeholder withou
     .toContain('img-src https://img.example/remote.png');
   expect(remote).toBe(0);
   // Off again: placeholder.
-  await page.evaluate(() => window.__harness.send({ type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, style: 'default' }));
+  await page.evaluate(() => window.__harness.send({ type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default' }));
   await expect(page.locator('.md-img-placeholder').first()).toHaveText('https://img.example/remote.png');
   expect(await page.evaluate(() => window.markdone?.__debug.docChanges('d1'))).toBe(0);
 });

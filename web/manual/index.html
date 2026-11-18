@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>markdone manual</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <!--
+      Manual harness: `npm run manual` (web/), then open /manual/. The Markdown below is the
+      document shown in the preview. It covers every feature of
+      build/e2e/inprocess/project/styles/*.md. Edit it here and reload the page.
+      Not covered, because one HTML file cannot hold them: CRLF line endings (the HTML parser
+      turns CR LF into LF), a file without a trailing newline, and file-level layout.
+    -->
+    <script type="text/markdown" id="md-source">
+---
+title: Manual test page
+tags: [manual, preview, styles]
+---
+
+# Manual test page
+
+This page covers the features of the e2e `styles` fixtures. It is one document, so the
+sections below correspond to the fixture files in order.
+
+## Headings (setext-headings)
+
+Main title
+==========
+
+Some text.
+
+Sub title
+---------
+
+More text.
+
+Short
+===
+
+### Heading 3
+
+#### Heading 4
+
+##### Heading 5
+
+###### Heading 6
+
+## Blockquotes (blockquotes)
+
+> quoted
+> lines
+
+> lazy
+continuation
+
+> nested
+> > deeper
+
+> Quote with **emphasis** and a list:
+>
+> - inside a quote
+> - second item
+
+## Bullet markers (bullets)
+
+- dash one
+- dash two
+
+* star one
+* star two
+
++ plus one
++ plus two
+
+- mixed list
+- with `code` and **bold**
+
+## Loose and tight lists (loose-tight-lists)
+
+Tight:
+
+- a
+- b
+- c
+
+Loose:
+
+- a
+
+- b
+
+- c
+
+Mixed item:
+
+- first paragraph
+
+  second paragraph
+- tight next
+
+## Nested lists (nested-lists)
+
+- level one
+  - level two
+    - level three
+  - back to two
+- one again
+  1. ordered inside
+  2. second
+
+1. ordered
+   - bullet inside
+   - another
+2. next
+
+## Ordered markers (ordered-markers)
+
+1. dot one
+2. dot two
+3. dot three
+
+1) paren one
+2) paren two
+
+3. starts at three
+4. four
+
+1. all ones
+1. all ones
+1. all ones
+
+10) tenth marker
+
+## Tabs in lists (tabs-in-lists)
+
+-	Tab after marker
+-	Second
+	-	Nested with tab
+
+1.	Ordered with tab
+2.	Second
+
+## Emphasis (emphasis)
+
+Star *emphasis* and underscore _emphasis_.
+
+Star **strong** and underscore __strong__.
+
+Mixed ***both*** and ___both___ and **_nested_** and *__nested__*.
+
+Strike ~~through~~ and `inline code` and ``code with ` tick``.
+
+## Fences (fences)
+
+```js
+const a = 1;
+```
+
+~~~python
+print("tilde")
+~~~
+
+````
+nested ``` fence
+````
+
+    indented code
+    second line
+
+```
+no language
+```
+
+```python
+print("fenced")
+```
+
+## Hard breaks (hard-breaks)
+
+Two spaces at end
+next line.
+
+Backslash at end\
+next line.
+
+Soft break
+next line.
+
+## Repeated paragraphs (repeated-paragraphs)
+
+Same paragraph text.
+
+Same paragraph text.
+
+Same paragraph text.
+
+Same paragraph text.
+
+- same
+- same
+- same
+
+## Footnotes (footnotes)
+
+A sentence with a footnote[^1] and a named one[^note].
+
+A link [text](https://example.com) next to a reference[^1].
+
+[^1]: The first footnote, with *emphasis*.
+[^note]: A named footnote
+    with an indented second line.
+
+Text after the definitions.
+
+## Reference links (reference-links)
+
+A [full reference][ref] and a [collapsed][] and a [shortcut].
+
+[ref]: https://example.com/full "Full title"
+[collapsed]: https://example.com/collapsed
+[shortcut]: <https://example.com/shortcut>
+
+## HTML blocks (html-blocks)
+
+<div align="center">
+  <b>bold in html</b>
+</div>
+
+Inline <kbd>Ctrl</kbd> + <kbd>C</kbd> html.
+
+<details>
+<summary>Summary</summary>
+
+Hidden **markdown**.
+
+</details>
+
+## HTML comments (html-comments)
+
+<!-- a block comment -->
+
+Text with <!-- inline comment --> inside.
+
+<!--
+multi line
+comment
+-->
+
+## Raw HTML in a live-preview block
+
+<div class="raw">raw <b>HTML</b></div>
+
+Inline <span>html</span> tag.
+
+## Images (images)
+
+Relative: ![logo](./logo.png "Logo") and ![nested](img/sub%20dir/pic.png).
+
+Parent directory: ![up](../shared/up.png)
+
+Angle brackets: ![spaces](<my image.png>)
+
+Data (inline PNG, always loads): ![dot](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==)
+
+Remote (opt-in, off by default in the preview): ![remote](https://img.example/remote.png)
+
+Reference: ![ref image][logo]
+
+In a link: [![badge](badge.svg)](https://example.com)
+
+Not loaded: ![file](file:///etc/passwd) ![script](javascript:alert(1))
+
+[logo]: ./logo.png
+
+## Live preview (live-preview)
+
+Text with **strong**, *em*, ~~strike~~, `code`, [link](https://example.com), <https://auto.example> and https://bare.example.
+
+- bullet
+* star bullet
+- [ ] open task
+- [x] done task
+
+> quote line
+> > nested quote
+
+    indented code
+
+---
+
+Footnote reference[^live].
+
+[^live]: The footnote text of the live-preview section.
+
+![dot](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==)
+
+## Tables (tables)
+
+| Left | Center | Right | None |
+|:-----|:------:|------:|------|
+| a    |   b    |     c | d    |
+| long cell text | x | 1.5 | |
+
+Name | Value
+--- | ---
+no pipes | at edges
+
+## Tables, M2 edge cases (tables-m2)
+
+| Name | Value | Notes |
+|:-----|------:|:-----:|
+| escaped \| pipe | `a\|b` | **bold** and *em* |
+| [link](https://example.com) | ~~old~~ 2 | |
+| missing cell | 3 |
+| extra | 4 | x | dropped |
+
+Plain | No | Outer
+--- | --- | ---
+1 | 2 | 3
+
+> | Quoted | Table |
+> |-------:|:------|
+> | right  | left  |
+
+- List item with a table:
+
+  | In | List |
+  |----|------|
+  | a  | b    |
+
+|||
+|-|-|
+|empty|header|
+
+Not a table: | a | `b|c` |
+|---|---|
+
+## Tables, edge cases (tables-edge)
+
+Lazy body row without pipes:
+
+| Key | Value |
+|-----|-------|
+| a   | 1     |
+lazy row
+| b   | 2     |
+
+- | a | b |
+  |---|---|
+  | 1 | 2 |
+
+1. | a |
+   |:-:|
+   | x |
+
+> Quote with a table:
+>
+> | Left | Right |
+> |:-----|------:|
+> | l    | r     |
+> lazy in quote
+
+- List item with a table:
+
+  | In | List | `code \| pipe` |
+  |----|:----:|----------------|
+  | a  | b    | c \| d         |
+  | e  |
+
+## Trailing blank lines (several-trailing-newlines)
+
+The lines below this one are blank. The document ends after them.
+
+
+
+
+</script>
+    <script type="module" src="./manual.ts"></script>
+  </body>
+</html>

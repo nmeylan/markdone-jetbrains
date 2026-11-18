@@ -498,6 +498,7 @@ class SharedBrowserService : Disposable {
             addProperty("math", settings.math)
             addProperty("mermaid", settings.mermaid)
             addProperty("highlight", settings.highlight)
+            addProperty("softBreaks", settings.softBreaks)
             addProperty("style", settings.style.id)
         }
     }

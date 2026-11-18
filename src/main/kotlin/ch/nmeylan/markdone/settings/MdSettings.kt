@@ -32,6 +32,7 @@ class MdSettings : SimplePersistentStateComponent<MdSettings.SettingsState>(Sett
         var math by property(true)
         var mermaid by property(true)
         var highlight by property(true)
+        var softBreaks by property(true)
 
         // Percent: an exact step of 0.1.
         var zoomPercent by property(100)
@@ -101,6 +102,15 @@ class MdSettings : SimplePersistentStateComponent<MdSettings.SettingsState>(Sett
         set(value) {
             if (value == highlight) return
             state.highlight = value
+            changed()
+        }
+
+    /** On: a single line feed in a paragraph shows as a line break. Off: it shows as a space. */
+    var softBreaks: Boolean
+        get() = state.softBreaks
+        set(value) {
+            if (value == softBreaks) return
+            state.softBreaks = value
             changed()
         }
 

@@ -75,6 +75,10 @@ class MdConfigurable(private val project: Project) : BoundConfigurable(DISPLAY_N
                     checkBox("Code highlighting").bindSelected(settings::highlight)
                 }
                 row {
+                    checkBox("Soft line breaks").bindSelected(settings::softBreaks)
+                        .comment("Shows a single line feed in a paragraph as a line break. Off: as a space.")
+                }
+                row {
                     checkBox("Remote images").bindSelected(settings::remoteImages)
                         .comment("Loads http(s) images from the network.")
                 }
