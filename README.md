@@ -36,6 +36,7 @@ I wanted one tab where I edit the formatted text directly, that stays fast on a 
 - Images: relative paths and `data:`; remote images are off by default
 - Math with KaTeX (`$…$`, `$$…$$`)
 - Mermaid diagrams (strict mode)
+- Drawio diagrams (when using a pattern: by default(configurable)  `drawio:path/to/my.drawio#Super diagram`) 
 - Code highlighting with highlight.js (visible blocks only)
 - Math, Mermaid and highlighting load only when a document uses them, and you can turn each one off
 
