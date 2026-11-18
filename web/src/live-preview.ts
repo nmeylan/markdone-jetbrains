@@ -31,6 +31,7 @@ import { docIdFacet } from './controller';
 import { Lru, hash53, heavyStats, keyOf, lazy } from './heavy/cache';
 import { CodeHighlighter, type LineRange, hljsName } from './heavy/highlight';
 import { type ImageSource, resolveImage } from './images';
+import { pathExists, pathsChanged } from './paths';
 import type { Command } from './protocol';
 import { type TableModel, cellAt, tableActionFor, tableModel } from './table-model';
 
@@ -236,8 +237,9 @@ class TableWidget extends WidgetType {
     // Default theme: ~31.4 px per row + the wrapper padding.
     return Math.round(this.model.rows.length * 31.4 + 33);
   }
-  toDOM(): HTMLElement {
+  toDOM(view: EditorView): HTMLElement {
     const { model } = this;
+    const docId = view.state.facet(docIdFacet);
     const rows = model.rows.length;
     const columns = model.columns;
     const wrap = document.createElement('div');
@@ -279,6 +281,12 @@ class TableWidget extends WidgetType {
           const span = document.createElement('span');
           span.className = seg.cls;
           span.textContent = seg.text;
+          // Path code: `md-path` once the IDE said the file exists (`pathsPlugin` updates it later).
+          const path = seg.cls.split(' ').includes('md-code') ? codePath(seg.text) : null;
+          if (path) {
+            span.dataset['path'] = path;
+            if (pathExists(docId, path)) span.classList.add('md-path');
+          }
           td.appendChild(span);
         }
         if (r === 0) {
@@ -304,6 +312,10 @@ class TableWidget extends WidgetType {
   override ignoreEvent(event: Event): boolean {
     if (event.type !== 'mousedown' || (event as MouseEvent).button !== 0 || !(event.target instanceof HTMLElement)) return false;
     if (event.target.closest(`.${TABLE_BUTTON}`)) return false;
+    // Ctrl/Cmd-click on a file path opens the file (main.ts).
+    if ((event as MouseEvent).ctrlKey || (event as MouseEvent).metaKey) {
+      if (event.target.closest('.md-path')) return false;
+    }
     const view = EditorView.findFromDOM(event.target.closest<HTMLElement>('.cm-editor') ?? event.target);
     return view?.state.facet(awaitingDoubleClick) ?? false;
   }
@@ -478,6 +490,24 @@ function fenceBody(state: EditorState, node: SyntaxNode): { from: number; to: nu
   return { from, to };
 }
 
+/**
+ * The project file path written as inline code (`src/Foo.kt`), or `null`. Relative only: no scheme,
+ * no leading `/` or `~`, no spaces. It needs a `/` or a file extension (`README.md`).
+ */
+export function codePath(text: string): string | null {
+  const t = text.trim();
+  if (!/^[\w.@+-]+(\/[\w.@+-]+)*$/.test(t) || !/\/|\.[A-Za-z0-9]{1,8}$/.test(t)) return null;
+  return t;
+}
+
+/** The path inside an `InlineCode` node, or `null`. */
+export function inlineCodePath(state: EditorState, node: SyntaxNode): string | null {
+  const marks = node.getChildren('CodeMark');
+  const from = marks[0]?.to ?? node.from;
+  const to = marks.length > 1 ? (marks[marks.length - 1]?.from ?? node.to) : node.to;
+  return codePath(state.doc.sliceString(from, to));
+}
+
 const hide = Decoration.replace({});
 const bullet = Decoration.replace({ widget: new BulletWidget() });
 const hr = Decoration.replace({ widget: new HrWidget() });
@@ -610,9 +640,18 @@ function buildInline(view: EditorView, code: CodeHighlighter, docChanged: boolea
           case 'Emphasis':
           case 'StrongEmphasis':
           case 'Strikethrough':
-          case 'InlineCode':
             out.push(marks[name].range(from, to));
             return;
+          case 'InlineCode': {
+            // A file path is marked only when the IDE said the file exists (async, `paths`).
+            const path = inlineCodePath(state, ref.node);
+            if (path && pathExists(state.facet(docIdFacet), path)) {
+              out.push(Decoration.mark({ class: 'md-code md-path', attributes: { 'data-path': path } }).range(from, to));
+            } else {
+              out.push(marks.InlineCode.range(from, to));
+            }
+            return;
+          }
           case 'EmphasisMark':
           case 'StrikethroughMark':
           case 'CodeMark':
@@ -806,7 +845,7 @@ const inlinePlugin = ViewPlugin.fromClass(
         u.viewportChanged ||
         u.selectionSet ||
         syntaxTree(u.startState) !== syntaxTree(u.state) ||
-        u.transactions.some((tr) => tr.effects.some((e) => e.is(refresh)))
+        u.transactions.some((tr) => tr.effects.some((e) => e.is(refresh) || e.is(pathsChanged)))
       ) {
         this.decorations = buildInline(u.view, this.code, u.docChanged);
       }
@@ -1140,6 +1179,19 @@ function clicks(command: (c: Command) => void): Extension {
   });
 }
 
+/** Table cells are widgets: a `paths` answer toggles `md-path` on their path code in place. */
+const pathsPlugin = ViewPlugin.fromClass(
+  class {
+    update(u: ViewUpdate): void {
+      if (!u.transactions.some((tr) => tr.effects.some((e) => e.is(pathsChanged)))) return;
+      const docId = u.state.facet(docIdFacet);
+      for (const span of u.view.dom.querySelectorAll<HTMLElement>('.md-table-wrap [data-path]')) {
+        span.classList.toggle('md-path', pathExists(docId, span.dataset['path'] ?? ''));
+      }
+    }
+  },
+);
+
 export function livePreview(command: (c: Command) => void): Extension {
-  return [inlinePlugin, tableField, windowPlugin, clicks(command)];
+  return [inlinePlugin, tableField, windowPlugin, pathsPlugin, clicks(command)];
 }

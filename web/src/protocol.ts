@@ -1,4 +1,5 @@
-// IDE <-> page messages, protocol version 2.5 (protocol/PROTOCOL.md).
+// IDE <-> page messages, protocol version 2.6 (protocol/PROTOCOL.md).
+import { MAX_PATHS, MAX_PATH_LENGTH } from './paths';
 
 export const PROTOCOL_VERSION = 2;
 
@@ -24,6 +25,7 @@ export type IdeMessage =
   | { type: 'reject'; docId: string; seq: number }
   | { type: 'flush'; docId: string; seq: number }
   | { type: 'writable'; docId: string; writable: boolean }
+  | { type: 'paths'; docId: string; exist: string[]; missing: string[] }
   | { type: 'theme'; dark: boolean; fontFamily: string; fontSizePx: number; zoom: number }
   | { type: 'css'; global: string; project: string | null }
   | { type: 'settings'; remoteImages: boolean; math: boolean; mermaid: boolean; highlight: boolean; softBreaks: boolean; style: MdStyle; doubleClickEdit: boolean; vim: boolean; vimrc: VimMapping[]; colorTheme: MdColorTheme };
@@ -69,7 +71,8 @@ export type PageMessage =
       table?: { from: number; to: number; row: number; column: number };
     }
   | { type: 'command'; docId: string; name: 'tableAction'; action: TableAction; from: number; to: number; row: number; column: number }
-  | { type: 'command'; docId: string; name: 'gotoSource'; pos: number };
+  | { type: 'command'; docId: string; name: 'gotoSource'; pos: number }
+  | { type: 'command'; docId: string; name: 'pathsExist'; paths: string[] };
 
 export type TableAction =
   | 'insertRowAbove'
@@ -103,7 +106,7 @@ export function hostFunction(msg: PageMessage): 'ready' | 'patch' | 'link' | 'co
   }
 }
 
-type FieldKind = 'number' | 'offset' | 'offset?' | 'string' | 'boolean' | 'string|null' | 'changes' | 'selection?' | 'style' | 'mappings' | 'colorTheme';
+type FieldKind = 'number' | 'offset' | 'offset?' | 'string' | 'boolean' | 'string|null' | 'changes' | 'selection?' | 'style' | 'mappings' | 'colorTheme' | 'strings';
 
 const FIELDS: Record<IdeMessage['type'], Record<string, FieldKind>> = {
   open: { docId: 'string', writable: 'boolean' },
@@ -115,6 +118,7 @@ const FIELDS: Record<IdeMessage['type'], Record<string, FieldKind>> = {
   reject: { docId: 'string', seq: 'number' },
   flush: { docId: 'string', seq: 'number' },
   writable: { docId: 'string', writable: 'boolean' },
+  paths: { docId: 'string', exist: 'strings', missing: 'strings' },
   theme: { dark: 'boolean', fontFamily: 'string', fontSizePx: 'number', zoom: 'number' },
   css: { global: 'string', project: 'string|null' },
   settings: { remoteImages: 'boolean', math: 'boolean', mermaid: 'boolean', highlight: 'boolean', softBreaks: 'boolean', style: 'style', doubleClickEdit: 'boolean', vim: 'boolean', vimrc: 'mappings', colorTheme: 'colorTheme' },
@@ -172,6 +176,8 @@ function fieldOk(value: unknown, kind: FieldKind): boolean {
             m['rhs'] !== '',
         )
       );
+    case 'strings':
+      return Array.isArray(value) && value.length <= MAX_PATHS && value.every((v) => typeof v === 'string' && v.length <= MAX_PATH_LENGTH);
     case 'colorTheme':
       return typeof value === 'string' && COLOR_THEMES.includes(value);
     case 'selection?':

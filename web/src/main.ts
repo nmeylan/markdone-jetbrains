@@ -11,6 +11,7 @@ import { EditorState, type Extension, type StateEffect, type Text } from '@codem
 import { EditorView, drawSelection, keymap } from '@codemirror/view';
 import type { SyntaxNode } from '@lezer/common';
 
+import { setPathRequester } from './paths';
 import { Controller, type FetchResult, RESTORE_FRAMES, type ViewPort, lookRestoring, movesView } from './controller';
 import { EditMode } from './edit-mode';
 import { markdownLanguage } from './language';
@@ -105,7 +106,7 @@ function linkKind(href: string): 'external' | 'relative' | 'anchor' {
   return /^[a-z][a-z0-9+.-]*:/i.test(href) ? 'external' : 'relative';
 }
 
-/** href of the link at `pos`: `[text](url)`, `<url>` or a bare GFM URL. */
+/** href of the link at `pos`: `[text](url)`, `<url>`, or a bare GFM URL. */
 function linkAt(state: EditorState, pos: number): string | null {
   for (let n: SyntaxNode | null = syntaxTree(state).resolveInner(pos, 1); n; n = n.parent) {
     if (n.name === 'Link' || n.name === 'Autolink') {
@@ -124,6 +125,13 @@ const pageEvents = EditorView.domEventHandlers({
    */
   mousedown(event, view) {
     if (event.button !== 0 || !(event.ctrlKey || event.metaKey)) return false;
+    // File path in inline code (marked only when the file exists), also in a rendered table cell.
+    const path = event.target instanceof Element ? event.target.closest<HTMLElement>('.md-path')?.dataset['path'] : undefined;
+    if (path) {
+      event.preventDefault();
+      controller.link(path, 'relative');
+      return true;
+    }
     const pos = posAtEvent(view, event);
     if (pos === null) return false;
     event.preventDefault();
@@ -265,6 +273,8 @@ const controller = new Controller({
   now: () => performance.now(),
   lastUserInput: () => lastUserInput,
 });
+
+setPathRequester((docId, paths) => controller.command({ name: 'pathsExist', paths }, docId));
 
 export { controller };
 

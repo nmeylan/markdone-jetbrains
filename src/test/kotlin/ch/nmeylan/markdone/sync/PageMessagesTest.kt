@@ -195,6 +195,20 @@ class PageMessagesTest {
     }
 
     @Test
+    fun pathsExist() {
+        fun pe(body: String) = PageMessages.parse("command", """{"type":"command","docId":"$id","name":"pathsExist"$body}""")
+        assertEquals(PageMessage.PathsExist(id, listOf("src/A.kt", "README.md")), pe(""","paths":["src/A.kt","README.md"]"""))
+        assertEquals(PageMessage.PathsExist(id, emptyList()), pe(""","paths":[]"""))
+        assertNull(pe(""))
+        assertNull(pe(""","paths":"a.kt""""))
+        assertNull(pe(""","paths":[1]"""))
+        assertNull(pe(""","paths":[""]"""))
+        assertNull(pe(""","paths":["${"a".repeat(201)}"]"""))
+        assertNull(pe(""","paths":[${List(17) { "\"a.kt\"" }.joinToString(",")}]"""))
+        assertNull(pe(""","paths":["a.kt"],"extra":1"""))
+    }
+
+    @Test
     fun unknownTypeOrWrongChannel() {
         assertNull(PageMessages.parse("command", """{"type":"eval","docId":"$id","name":"toggleMode"}"""))
         assertNull(PageMessages.parse("link", """{"type":"command","docId":"$id","name":"toggleMode"}"""))

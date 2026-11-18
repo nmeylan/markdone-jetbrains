@@ -42,6 +42,9 @@ sealed interface PageMessage {
     /** Ctrl/Cmd-click on text that is not a link: Source mode with the caret at [pos]. */
     data class GotoSource(override val docId: String, val pos: Int) : ForDoc
 
+    /** Protocol 2.6: which of [paths] (relative, as written in inline code) are project files; the IDE replies `paths`. */
+    data class PathsExist(override val docId: String, val paths: List<String>) : ForDoc
+
     /** Protocol 2.4: start of the first visible line and the main selection of the page's active document. */
     data class Viewport(override val docId: String, val top: Int, val anchor: Int, val head: Int) : ForDoc
 }
@@ -76,6 +79,10 @@ object PageMessages {
         "link" to setOf("link"),
         "command" to setOf("command"),
     )
+
+    /** Most paths of one `pathsExist`, and the longest path. */
+    const val MAX_PATHS = 16
+    const val MAX_PATH_LENGTH = 200
 
     /** Commands with only `type`, `docId` and `name`. */
     val SIMPLE_COMMANDS = setOf("toggleMode", "find", "undo", "redo", "zoomIn", "zoomOut", "zoomReset")
@@ -178,6 +185,16 @@ object PageMessages {
             "gotoSource" -> {
                 if (!hasKeys(obj, "type", "docId", "name", "pos")) return null
                 offset(obj, "pos")?.let { PageMessage.GotoSource(docId, it) }
+            }
+            "pathsExist" -> {
+                if (!hasKeys(obj, "type", "docId", "name", "paths")) return null
+                val array = obj.get("paths")?.takeIf { it.isJsonArray }?.asJsonArray ?: return null
+                if (array.size() > MAX_PATHS) return null
+                val paths = array.map { e ->
+                    if (!e.isJsonPrimitive || !e.asJsonPrimitive.isString) return null
+                    e.asString.takeIf { it.isNotEmpty() && it.length <= MAX_PATH_LENGTH } ?: return null
+                }
+                PageMessage.PathsExist(docId, paths)
             }
             else -> null
         }

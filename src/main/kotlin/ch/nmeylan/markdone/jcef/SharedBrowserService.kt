@@ -33,6 +33,7 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.VetoableProjectManagerListener
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
 import ch.nmeylan.markdone.actions.PageSelection
 import ch.nmeylan.markdone.actions.PageTable
@@ -451,6 +452,7 @@ class SharedBrowserService : Disposable {
                     if (session.syncs[doc.docId] === sync) TableActions.perform(doc.source.project, doc.document, message.cell, action)
                 }
             }
+            is PageMessage.PathsExist -> answerPathsExist(session, doc, message)
             is PageMessage.GotoSource -> editorOf(session, doc)?.owner?.gotoSource(message.pos)
             is PageMessage.Viewport -> session.viewports[doc.docId] = WebEditor.Place(message.top, message.anchor, message.head)
         }
@@ -742,15 +744,8 @@ class SharedBrowserService : Disposable {
             }
             LinkKind.RELATIVE -> {
                 val path = href.substringBefore('#').substringBefore('?')
-                // No scheme and no absolute path: only paths relative to the .md file.
-                if (path.isEmpty() || path.startsWith('/') || ':' in path) return
-                val file = doc.source.file
                 ApplicationManager.getApplication().executeOnPooledThread {
-                    val baseDir = AssetRequestHandler.markdownDir(file) ?: return@executeOnPooledThread
-                    val roots = ReadAction.nonBlocking<List<Path>> { AssetRequestHandler.allowedRoots(project, file) }
-                        .executeSynchronously()
-                    // File IO outside the read action.
-                    val target = PathRules.resolve(baseDir, path, roots)
+                    val target = resolveProjectPath(project, doc.source.file, path)
                     if (target == null) {
                         LOG.info("Refused relative link outside the allowed roots or not found")
                         return@executeOnPooledThread
@@ -764,6 +759,36 @@ class SharedBrowserService : Disposable {
                 }
             }
         }
+    }
+
+    /** Replies `paths`: which of the paths of [message] are project files (same rules as a relative link). */
+    private fun answerPathsExist(session: Session, doc: DocRef, message: PageMessage.PathsExist) {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val (exist, missing) = message.paths.partition { resolveProjectPath(doc.source.project, doc.source.file, it) != null }
+            runOnEdt {
+                if (session.syncs[doc.docId] == null) return@runOnEdt
+                session.view.send(JsonObject().apply {
+                    addProperty("type", "paths")
+                    addProperty("docId", doc.docId)
+                    add("exist", JsonArray().also { a -> exist.forEach(a::add) })
+                    add("missing", JsonArray().also { a -> missing.forEach(a::add) })
+                })
+            }
+        }
+    }
+
+    /**
+     * The existing file that [path] names, or `null`. A path is relative: next to the `.md` file [file] first, then
+     * to each project content root. Never absolute, never outside those roots. Call it on a pooled thread.
+     */
+    private fun resolveProjectPath(project: Project, file: VirtualFile, path: String): Path? {
+        if (path.isEmpty() || path.startsWith('/') || ':' in path) return null
+        val baseDir = AssetRequestHandler.markdownDir(file) ?: return null
+        val contentRoots = ReadAction.nonBlocking<List<Path>> { AssetRequestHandler.contentRoots(project) }.executeSynchronously()
+        val roots = contentRoots + listOf(baseDir)
+        // File IO outside the read action.
+        return PathRules.resolve(baseDir, path, roots)
+            ?: contentRoots.firstNotNullOfOrNull { PathRules.resolve(it, path, roots) }
     }
 
     override fun dispose() {

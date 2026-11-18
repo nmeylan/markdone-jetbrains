@@ -1,4 +1,4 @@
-# IDE ↔ page protocol (version 2.4)
+# IDE ↔ page protocol (version 2.6)
 
 Owner: orchestrator. Both sides implement this contract. A change needs a human checkpoint
 (PLAN.md §8.7 item 4). Fixtures in `protocol/fixtures/*.json` replay these messages on both
@@ -114,6 +114,7 @@ Through `command`:
   from: number, to: number,      // source range of the whole table (Lezer `Table` node)
   row: number, column: number }  // 0-based cell position; row 0 = header row (alignment row not counted)
 { type: "command", docId: string, name: "gotoSource", pos: number }                      // M2: Ctrl/Cmd-click on non-link text → Source mode, caret at pos
+{ type: "command", docId: string, name: "pathsExist", paths: string[] }                  // 2.6: ≤ 16 paths, each 1..200 chars; see "File paths in code"
 ```
 
 ## IDE → page messages (`window.markdone.receive`)
@@ -131,6 +132,7 @@ Through `command`:
 { type: "reject",   docId: string, seq: number }         // page then waits for `reload` or `change`
 { type: "flush",    docId: string, seq: number }         // reply: patch with that seq (pending changes or [])
 { type: "writable", docId: string, writable: boolean }
+{ type: "paths",    docId: string, exist: string[], missing: string[] }  // 2.6: answer to `pathsExist` (each ≤ 16)
 { type: "theme",    dark: boolean, fontFamily: string, fontSizePx: number, zoom: number }
 { type: "css",      global: string, project: string | null }   // M2
 { type: "settings", remoteImages: boolean,                        // M2 (default false)
@@ -227,6 +229,17 @@ The page renders `![alt](src)` with:
   `fontSizePx * zoom`. The page never changes the CEF zoom level.
 - `zoomIn`/`zoomOut`/`zoomReset` are requests; Kotlin changes the setting and sends `theme` to
   every page.
+
+## File paths in code (protocol 2.6)
+
+Inline code that is a relative file path (`src/Foo.kt`, `README.md`) opens the file on Ctrl/Cmd-click, in
+the text and in table cells. The page styles it (`.md-path`) only when the file exists, so it asks the
+IDE with `pathsExist` for the visible candidates (one message after 30 ms, at most 16 paths, each 1..200
+chars). The IDE answers `paths` with every asked path in `exist` or `missing`. It resolves a path as a
+relative link does: next to the `.md` file first, then relative to each project content root; never
+absolute, never outside those roots (canonicalized, symlinks resolved). The click sends the existing
+`link` message with `kind: "relative"`. The page keeps the answers per document; `reload` and `close`
+clear them, `activate` clears the `missing` ones.
 
 ## Edit start and Vim (protocol 2.5)
 

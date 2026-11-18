@@ -17,6 +17,7 @@ import {
 } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 
+import { forgetPaths, pathsChanged, receivePaths, recheckMissing } from './paths';
 import type { Command, DocMessage, IdeMessage, PageMessage } from './protocol';
 import { Outbox } from './sync';
 import { windowConfig } from './windowed/windowed-parser';
@@ -267,13 +268,20 @@ export class Controller {
       return;
     }
     switch (msg.type) {
+      case 'paths':
+        receivePaths(msg.docId, msg.exist, msg.missing);
+        this.apply(entry, { effects: pathsChanged.of(null) });
+        break;
       case 'reload':
+        forgetPaths(msg.docId);
         void this.load(msg.docId, entry.writable);
         break;
       case 'activate':
+        recheckMissing(msg.docId);
         void this.activate(entry, msg.top, msg.selection);
         break;
       case 'close':
+        forgetPaths(msg.docId);
         this.close(entry);
         break;
       case 'change':

@@ -254,3 +254,26 @@ test('Alt-click adds a cursor (A16); a plain click replaces the selection', asyn
   await frames(page, 2);
   expect(await page.evaluate(() => window.__harness.selection())).toEqual([[0, 0]]);
 });
+
+test('path code: styled and clickable only after the IDE says the file exists, also in a table cell', async ({ page, guard }) => {
+  void guard;
+  await openHarness(page, 'Text `src/A.kt` and `src/B.kt`\n\n| File |\n|---|\n| `src/A.kt` |\n\nEnd\n');
+  await caret(page, 'Text `src/A.kt` and `src/B.kt`\n\n| File |\n|---|\n| `src/A.kt` |\n\nEnd\n'.length - 1);
+  await expect.poll(async () => (await sent(page, 'command')).map((m) => m['name'])).toContain('pathsExist');
+  const asked = (await sent(page, 'command')).filter((m) => m['name'] === 'pathsExist');
+  expect(asked).toEqual([{ type: 'command', docId: 'd1', name: 'pathsExist', paths: ['src/A.kt', 'src/B.kt'] }]);
+  // No cue before the answer.
+  await expect(page.locator('.md-path')).toHaveCount(0);
+  await page.evaluate(() => window.markdone?.receive({ type: 'paths', docId: 'd1', exist: ['src/A.kt'], missing: ['src/B.kt'] }));
+  await expect(page.locator('.md-path')).toHaveCount(2);
+  await expect(page.locator('.md-path').first()).toHaveText('src/A.kt');
+  await expect(page.locator('.md-table .md-path')).toHaveText('src/A.kt');
+  // Ctrl/Cmd-click opens the file (text and table cell); a missing file keeps the plain code style.
+  await page.locator('.md-path').first().click({ modifiers: ['ControlOrMeta'] });
+  await page.locator('.md-table .md-path').click({ modifiers: ['ControlOrMeta'] });
+  await frames(page, 2);
+  expect(await sent(page, 'link')).toEqual([
+    { type: 'link', docId: 'd1', href: 'src/A.kt', kind: 'relative' },
+    { type: 'link', docId: 'd1', href: 'src/A.kt', kind: 'relative' },
+  ]);
+});

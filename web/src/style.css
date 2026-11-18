@@ -331,6 +331,10 @@
     color: var(--md-link);
     text-decoration: underline;
   }
+  .md-path {
+    color: var(--md-link);
+    text-decoration: underline dotted;
+  }
   .md-footnote {
     color: var(--md-accent);
   }

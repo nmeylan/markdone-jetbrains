@@ -155,6 +155,7 @@ markers are visible (class `md-marker`); on other lines they are hidden or repla
 | `.md-h1` … `.md-h6` | Line | Heading lines (ATX and setext). Every heading line also has `.md-h` |
 | `.md-strong`, `.md-em`, `.md-strike` | Inline | `**strong**`, `*em*`, `~~strike~~` |
 | `.md-code` | Inline | Inline code (also inside table cells) |
+| `.md-path` | Inline | Inline code that is a relative file path (with `.md-code`); Ctrl/Cmd-click opens the file |
 | `.md-link` | Inline | Link text, autolinks, bare URLs |
 | `.md-marker` | Inline | A visible Markdown marker (active line), front matter fences |
 | `.md-quote` | Line | Blockquote lines |
