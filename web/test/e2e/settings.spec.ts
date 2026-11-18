@@ -17,8 +17,12 @@ interface Settings {
   highlight: boolean;
   softBreaks: boolean;
   style: 'default' | 'compact' | 'serif';
+  doubleClickEdit: boolean;
+  vim: boolean;
+  colorTheme: 'ide' | 'tokyo-night' | 'tokyo-storm' | 'tokyo-moon' | 'tokyo-light';
+  vimrc: { mode: string; remap: boolean; lhs: string; rhs: string }[];
 }
-const DEFAULTS: Settings = { remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default' };
+const DEFAULTS: Settings = { remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] };
 
 /** Sends a full 2.3 `settings` message; the page applies it in the next frame (after a scroll snapshot). */
 async function settings(page: Page, s: Partial<Settings>): Promise<void> {
@@ -77,6 +81,32 @@ test('settings 2.3: the full message is accepted and remote images apply; other 
   await expect(placeholder).toHaveText('https://img.example/r.png');
   await expect(page.locator('html')).toHaveAttribute('data-md-style', 'default');
   expect(await page.evaluate(() => window.markdone?.__debug.docChanges('d1'))).toBe(0);
+});
+
+test('settings: colorTheme sets data-md-color-theme and the Tokyo palette; ide keeps the IDE colors', async ({ page, guard }) => {
+  void guard;
+  await openHarness(page, '# T\n\ntext\n');
+  const color = (name: string) => page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name);
+  await expect(page.locator('html')).toHaveAttribute('data-md-color-theme', 'ide');
+  expect(await color('--md-bg')).toBe('#ffffff');
+  const expected = {
+    'tokyo-night': '#1a1b26',
+    'tokyo-storm': '#24283b',
+    'tokyo-moon': '#222436',
+    'tokyo-light': '#d5d6db',
+  } as const;
+  for (const [name, bg] of Object.entries(expected)) {
+    await settings(page, { colorTheme: name as Settings['colorTheme'] });
+    await expect(page.locator('html')).toHaveAttribute('data-md-color-theme', name);
+    expect(await color('--tn-bg')).toBe(bg);
+    await expect(page.locator('.cm-content')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).not.toBe('rgb(255, 255, 255)');
+  }
+  await page.evaluate((m) => window.__harness.send(m), { type: 'settings', ...DEFAULTS, colorTheme: 'solarized' });
+  await frames(page, 2);
+  await expect(page.locator('html')).toHaveAttribute('data-md-color-theme', 'tokyo-light');
+  await settings(page, { colorTheme: 'ide' });
+  expect(await color('--md-bg')).toBe('#ffffff');
 });
 
 const HEAVY_DOC = [
@@ -308,7 +338,7 @@ test('styles: data-md-style sets the style variables in light and dark; user CSS
         bg: getComputedStyle(document.querySelector('.cm-editor') as Element).backgroundColor,
       };
     });
-  const DEFAULT = { fontSize: '14px', lineHeight: '22.4px', font: '"sans-serif"', maxWidth: '916px', padding: '16px 32px 64px', h1: '28px', h1Weight: '600', h1Space: '0px', bg: 'rgb(255, 255, 255)' };
+  const DEFAULT = { fontSize: '14px', lineHeight: '25.2px', font: '"sans-serif"', maxWidth: 'none', padding: '16px 32px 64px', h1: '28px', h1Weight: '600', h1Space: '0px', bg: 'rgb(255, 255, 255)' };
   expect(await look()).toEqual(DEFAULT);
   await expect(page.locator('html')).toHaveAttribute('data-md-style', 'default');
   await settings(page, { style: 'compact' });
@@ -320,9 +350,9 @@ test('styles: data-md-style sets the style variables in light and dark; user CSS
   // Dark: the same style, the dark colours.
   await theme(page, 14, 1, true);
   await frames(page, 2);
-  expect(await look()).toEqual({ ...serif, bg: 'rgb(30, 31, 34)' });
+  expect(await look()).toEqual({ ...serif, bg: 'rgb(26, 27, 38)' });
   await settings(page, { style: 'compact' });
-  expect(await look()).toEqual({ ...compact, bg: 'rgb(30, 31, 34)' });
+  expect(await look()).toEqual({ ...compact, bg: 'rgb(26, 27, 38)' });
   // User CSS (layer user) wins over the style variables.
   await page.evaluate(() => window.__harness.send({ type: 'css', global: ':root { --md-max-width: 500px; --md-line-height: 2; --md-h1-size: 3em; }', project: null }));
   await frames(page, 2);

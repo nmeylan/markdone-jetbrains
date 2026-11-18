@@ -40,7 +40,7 @@ import javax.swing.SwingUtilities
 
 /**
  * The Markdown tab: Source mode (`SHOW_EDITOR`, platform text editor) and Edit mode
- * (`SHOW_PREVIEW`, [WebEditor]). There is no split mode. Every open starts in Source.
+ * (`SHOW_PREVIEW`, [WebEditor]). There is no split mode. An open starts in Source, unless the "open in Edit mode" setting is on.
  */
 class MdEditor(textEditor: TextEditor, private val web: WebEditor) :
     TextEditorWithPreview(textEditor, web, "markdone", Layout.SHOW_EDITOR, false, Layout.SHOW_EDITOR) {

@@ -446,7 +446,7 @@ class SharedBrowserServiceTest : BasePlatformTestCase() {
         page.ready()
         val settings = page.sent.single { it["type"].asString == "settings" }
         assertTrue(settings["remoteImages"].asBoolean)
-        assertEquals(setOf("type", "remoteImages", "math", "mermaid", "highlight", "softBreaks", "style"), settings.keySet())
+        assertEquals(setOf("type", "remoteImages", "math", "mermaid", "highlight", "softBreaks", "style", "doubleClickEdit", "vim", "vimrc", "colorTheme"), settings.keySet())
         assertEquals(listOf("theme", "open", "settings", "css"), page.sentTypes())
     }
 
@@ -497,7 +497,7 @@ class SharedBrowserServiceTest : BasePlatformTestCase() {
         val (page, _) = openedPageWithReadyMessages(editor("a.md"))
         val first = page.sent.single { it["type"].asString == "settings" }
         assertEquals(
-            com.google.gson.JsonParser.parseString("""{"type":"settings","remoteImages":false,"math":true,"mermaid":true,"highlight":true,"softBreaks":true,"style":"default"}"""),
+            com.google.gson.JsonParser.parseString("""{"type":"settings","remoteImages":false,"math":true,"mermaid":true,"highlight":true,"softBreaks":true,"style":"default","doubleClickEdit":false,"vim":false,"vimrc":[],"colorTheme":"ide"}"""),
             first,
         )
         page.sent.clear()
@@ -507,7 +507,7 @@ class SharedBrowserServiceTest : BasePlatformTestCase() {
         val sent = page.sent.filter { it["type"].asString == "settings" }
         assertEquals(2, sent.size)
         assertEquals(
-            com.google.gson.JsonParser.parseString("""{"type":"settings","remoteImages":false,"math":false,"mermaid":true,"highlight":true,"softBreaks":true,"style":"compact"}"""),
+            com.google.gson.JsonParser.parseString("""{"type":"settings","remoteImages":false,"math":false,"mermaid":true,"highlight":true,"softBreaks":true,"style":"compact","doubleClickEdit":false,"vim":false,"vimrc":[],"colorTheme":"ide"}"""),
             sent.last(),
         )
         assertTrue("No theme: the zoom did not change", page.sent.none { it["type"].asString == "theme" })

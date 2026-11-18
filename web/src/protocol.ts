@@ -1,4 +1,4 @@
-// IDE <-> page messages, protocol version 2.4 (protocol/PROTOCOL.md).
+// IDE <-> page messages, protocol version 2.5 (protocol/PROTOCOL.md).
 
 export const PROTOCOL_VERSION = 2;
 
@@ -26,11 +26,25 @@ export type IdeMessage =
   | { type: 'writable'; docId: string; writable: boolean }
   | { type: 'theme'; dark: boolean; fontFamily: string; fontSizePx: number; zoom: number }
   | { type: 'css'; global: string; project: string | null }
-  | { type: 'settings'; remoteImages: boolean; math: boolean; mermaid: boolean; highlight: boolean; softBreaks: boolean; style: MdStyle };
+  | { type: 'settings'; remoteImages: boolean; math: boolean; mermaid: boolean; highlight: boolean; softBreaks: boolean; style: MdStyle; doubleClickEdit: boolean; vim: boolean; vimrc: VimMapping[]; colorTheme: MdColorTheme };
+
+/** A key mapping for the page's Vim (from the user's .ideavimrc). */
+export interface VimMapping {
+  mode: 'all' | 'normal' | 'insert' | 'visual' | 'operator';
+  remap: boolean;
+  lhs: string;
+  rhs: string;
+}
+const MAX_MAPPINGS = 500;
+const VIM_MODES: readonly string[] = ['all', 'normal', 'insert', 'visual', 'operator'] satisfies VimMapping['mode'][];
 
 /** Built-in styles: `<html data-md-style="...">`. */
 export type MdStyle = 'default' | 'compact' | 'serif';
 const STYLES: readonly string[] = ['default', 'compact', 'serif'] satisfies MdStyle[];
+
+/** Color themes: `<html data-md-color-theme="...">`. `ide` follows the IDE light/dark theme. */
+export type MdColorTheme = 'ide' | 'tokyo-night' | 'tokyo-storm' | 'tokyo-moon' | 'tokyo-light';
+const COLOR_THEMES: readonly string[] = ['ide', 'tokyo-night', 'tokyo-storm', 'tokyo-moon', 'tokyo-light'] satisfies MdColorTheme[];
 
 export type DocMessage = Extract<IdeMessage, { docId: string }>;
 
@@ -89,7 +103,7 @@ export function hostFunction(msg: PageMessage): 'ready' | 'patch' | 'link' | 'co
   }
 }
 
-type FieldKind = 'number' | 'offset' | 'offset?' | 'string' | 'boolean' | 'string|null' | 'changes' | 'selection?' | 'style';
+type FieldKind = 'number' | 'offset' | 'offset?' | 'string' | 'boolean' | 'string|null' | 'changes' | 'selection?' | 'style' | 'mappings' | 'colorTheme';
 
 const FIELDS: Record<IdeMessage['type'], Record<string, FieldKind>> = {
   open: { docId: 'string', writable: 'boolean' },
@@ -103,7 +117,7 @@ const FIELDS: Record<IdeMessage['type'], Record<string, FieldKind>> = {
   writable: { docId: 'string', writable: 'boolean' },
   theme: { dark: 'boolean', fontFamily: 'string', fontSizePx: 'number', zoom: 'number' },
   css: { global: 'string', project: 'string|null' },
-  settings: { remoteImages: 'boolean', math: 'boolean', mermaid: 'boolean', highlight: 'boolean', softBreaks: 'boolean', style: 'style' },
+  settings: { remoteImages: 'boolean', math: 'boolean', mermaid: 'boolean', highlight: 'boolean', softBreaks: 'boolean', style: 'style', doubleClickEdit: 'boolean', vim: 'boolean', vimrc: 'mappings', colorTheme: 'colorTheme' },
 };
 
 const isOffset = (v: unknown): boolean => Number.isSafeInteger(v) && (v as number) >= 0;
@@ -142,6 +156,24 @@ function fieldOk(value: unknown, kind: FieldKind): boolean {
       );
     case 'style':
       return typeof value === 'string' && STYLES.includes(value);
+    case 'mappings':
+      return (
+        Array.isArray(value) &&
+        value.length <= MAX_MAPPINGS &&
+        value.every(
+          (m) =>
+            exactKeys(m, ['mode', 'remap', 'lhs', 'rhs']) &&
+            typeof m['mode'] === 'string' &&
+            VIM_MODES.includes(m['mode']) &&
+            typeof m['remap'] === 'boolean' &&
+            typeof m['lhs'] === 'string' &&
+            typeof m['rhs'] === 'string' &&
+            m['lhs'] !== '' &&
+            m['rhs'] !== '',
+        )
+      );
+    case 'colorTheme':
+      return typeof value === 'string' && COLOR_THEMES.includes(value);
     case 'selection?':
       return value === undefined || (exactKeys(value, ['anchor', 'head']) && isOffset(value['anchor']) && isOffset(value['head']));
   }

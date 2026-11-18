@@ -71,7 +71,6 @@ Generated files: do not edit `build/generated/web-resources/`, screenshot baseli
 files by hand. A change to baselines or golden files needs a written reason.
 
 ## Comment style (Java/Kotlin)
-
 - `/** ... */` (Javadoc) is only for comments directly above a declaration (class, method, field).
   Using it elsewhere trips IntelliJ's "Dangling Javadoc comment" inspection, since there's no
   declaration for it to document.

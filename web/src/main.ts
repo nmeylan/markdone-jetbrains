@@ -12,6 +12,7 @@ import { EditorView, drawSelection, keymap } from '@codemirror/view';
 import type { SyntaxNode } from '@lezer/common';
 
 import { Controller, type FetchResult, RESTORE_FRAMES, type ViewPort, lookRestoring, movesView } from './controller';
+import { EditMode } from './edit-mode';
 import { markdownLanguage } from './language';
 import { livePreview, posAtEvent, refresh, setDarkTheme, setRenderSettings, tableAtEvent, withCurrentSettings } from './live-preview';
 import { type IdeMessage, PROTOCOL_VERSION, type PageMessage, hostFunction, validateIdeMessage } from './protocol';
@@ -188,6 +189,12 @@ root.addEventListener(
   { capture: true, passive: false },
 );
 
+const editMode = new EditMode(
+  () => view,
+  (command) => controller.command(command),
+  posAtEvent,
+);
+
 /** Extensions of every document state. */
 const extensions: Extension = [
   // Keep `\r` and every other character: doc.toString() must equal the IDE text.
@@ -205,6 +212,7 @@ const extensions: Extension = [
   editorTheme,
   EditorView.lineWrapping,
   pageEvents,
+  editMode.extension,
 ];
 
 /** Characters parsed after a restored scroll position (some screens of text). */
@@ -217,7 +225,7 @@ const port: ViewPort = {
   setState(state) {
     // A look-change restore belongs to the old state; a state built with older render settings is rebuilt first.
     lookRestore = null;
-    view.setState(withCurrentSettings(state));
+    view.setState(editMode.prepare(withCurrentSettings(state)));
   },
   dispatch: (spec) => view.dispatch(spec),
   scrollSnapshot: () => ({ effect: view.scrollSnapshot(), pos: view.lineBlockAtHeight(view.scrollDOM.getBoundingClientRect().top - view.documentTop).from }),
@@ -387,8 +395,10 @@ let renderSettingsChanged = false;
  */
 function applySettings(msg: Extract<IdeMessage, { type: 'settings' }>): void {
   renderSettingsChanged = setRenderSettings(msg) || renderSettingsChanged;
+  editMode.apply(msg);
   changeLook('settings', () => {
     document.documentElement.dataset['mdStyle'] = msg.style;
+    document.documentElement.dataset['mdColorTheme'] = msg.colorTheme;
     const rebuild = renderSettingsChanged;
     renderSettingsChanged = false;
     return rebuild;
@@ -429,5 +439,6 @@ window.markdone = {
 
 applyUserCss('', null);
 document.documentElement.dataset['mdStyle'] = 'default';
+document.documentElement.dataset['mdColorTheme'] = 'ide';
 window.addEventListener('markdone-host', onHost);
 onHost();

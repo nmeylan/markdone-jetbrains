@@ -19,6 +19,15 @@ enum class MdStyle(val id: String, val label: String) {
     SERIF("serif", "Serif"),
 }
 
+/** Page color theme (protocol 2.5 `settings.colorTheme`). */
+enum class MdColorTheme(val id: String, val label: String) {
+    IDE("ide", "IDE (light/dark)"),
+    TOKYO_NIGHT("tokyo-night", "Tokyo Night"),
+    TOKYO_STORM("tokyo-storm", "Tokyo Night Storm"),
+    TOKYO_MOON("tokyo-moon", "Tokyo Night Moon"),
+    TOKYO_LIGHT("tokyo-light", "Tokyo Night Light"),
+}
+
 /** Application settings; the page is [MdConfigurable]. Use on the EDT. */
 @Service(Service.Level.APP)
 @State(name = "MarkdoneSettings", storages = [Storage("markdone.xml")])
@@ -29,10 +38,14 @@ class MdSettings : SimplePersistentStateComponent<MdSettings.SettingsState>(Sett
         var remoteImages by property(false)
         var largeFileLimitMb by property(MAX_LARGE_FILE_MB)
         var style by enum(MdStyle.DEFAULT)
+        var colorTheme by enum(MdColorTheme.IDE)
         var math by property(true)
         var mermaid by property(true)
         var highlight by property(true)
         var softBreaks by property(true)
+        var doubleClickEdit by property(false)
+        var vim by property(false)
+        var openInEditMode by property(false)
 
         // Percent: an exact step of 0.1.
         var zoomPercent by property(100)
@@ -81,6 +94,14 @@ class MdSettings : SimplePersistentStateComponent<MdSettings.SettingsState>(Sett
             changed()
         }
 
+    var colorTheme: MdColorTheme
+        get() = state.colorTheme
+        set(value) {
+            if (value == colorTheme) return
+            state.colorTheme = value
+            changed()
+        }
+
     var math: Boolean
         get() = state.math
         set(value) {
@@ -112,6 +133,31 @@ class MdSettings : SimplePersistentStateComponent<MdSettings.SettingsState>(Sett
             if (value == softBreaks) return
             state.softBreaks = value
             changed()
+        }
+
+    /** On: the page is editable only after a double-click (Escape or leaving the page ends the edit). */
+    var doubleClickEdit: Boolean
+        get() = state.doubleClickEdit
+        set(value) {
+            if (value == doubleClickEdit) return
+            state.doubleClickEdit = value
+            changed()
+        }
+
+    /** On: Vim key bindings in Edit mode (CodeMirror's Vim, not IdeaVim). */
+    var vim: Boolean
+        get() = state.vim
+        set(value) {
+            if (value == vim) return
+            state.vim = value
+            changed()
+        }
+
+    /** On: a Markdown file opens in Edit mode instead of Source (a file above the large-file limit stays in Source). */
+    var openInEditMode: Boolean
+        get() = state.openInEditMode
+        set(value) {
+            state.openInEditMode = value
         }
 
     /** Edit-mode zoom (protocol 2.3 `theme.zoom`), 0.5..3.0. */

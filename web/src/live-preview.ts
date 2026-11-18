@@ -26,6 +26,7 @@ import { type EditorState, type Extension, type Range, StateEffect, StateField }
 import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, WidgetType } from '@codemirror/view';
 import type { SyntaxNode, SyntaxNodeRef } from '@lezer/common';
 
+import { awaitingDoubleClick } from './edit-mode';
 import { docIdFacet } from './controller';
 import { Lru, hash53, heavyStats, keyOf, lazy } from './heavy/cache';
 import { CodeHighlighter, type LineRange, hljsName } from './heavy/highlight';
@@ -241,6 +242,8 @@ class TableWidget extends WidgetType {
     const columns = model.columns;
     const wrap = document.createElement('div');
     wrap.className = 'md-table-wrap';
+    // A click focuses the wrap, so the editor leaves the selection inside the table alone (it can then be selected and copied).
+    wrap.tabIndex = -1;
     wrap.dataset['length'] = String(this.source.length);
     wrap.dataset['rows'] = String(rows);
     wrap.dataset['columns'] = String(columns);
@@ -294,8 +297,15 @@ class TableWidget extends WidgetType {
     wrap.appendChild(table);
     return wrap;
   }
-  override ignoreEvent(): boolean {
-    return false;
+  /*
+   * Waiting for a double-click: the editor leaves a left click in the table to the browser, so the
+   * cell text can be selected and copied and the table stays rendered. The "+"/"×" buttons still get it.
+   */
+  override ignoreEvent(event: Event): boolean {
+    if (event.type !== 'mousedown' || (event as MouseEvent).button !== 0 || !(event.target instanceof HTMLElement)) return false;
+    if (event.target.closest(`.${TABLE_BUTTON}`)) return false;
+    const view = EditorView.findFromDOM(event.target.closest<HTMLElement>('.cm-editor') ?? event.target);
+    return view?.state.facet(awaitingDoubleClick) ?? false;
   }
 }
 

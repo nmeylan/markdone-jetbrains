@@ -136,7 +136,11 @@ Through `command`:
 { type: "settings", remoteImages: boolean,                        // M2 (default false)
                     math: boolean, mermaid: boolean, highlight: boolean,  // M5 feature toggles (default true)
                     softBreaks: boolean,                                  // single line feed: line break (true, default) or space
-                    style: "default" | "compact" | "serif" }              // M5 built-in style (default "default")
+                    style: "default" | "compact" | "serif",               // M5 built-in style (default "default")
+                    doubleClickEdit: boolean,                             // 2.5: editable only after a double-click (default false)
+                    vim: boolean,                                         // 2.5: Vim key bindings (default false)
+                    vimrc: { mode: "all"|"normal"|"insert"|"visual"|"operator", remap: boolean, lhs: string, rhs: string }[],  // 2.5: key mappings (max 500)
+                    colorTheme: "ide" | "tokyo-night" | "tokyo-storm" | "tokyo-moon" | "tokyo-light" } // 2.5: color theme (default "ide")
 ```
 
 `change` rules:
@@ -223,6 +227,26 @@ The page renders `![alt](src)` with:
   `fontSizePx * zoom`. The page never changes the CEF zoom level.
 - `zoomIn`/`zoomOut`/`zoomReset` are requests; Kotlin changes the setting and sends `theme` to
   every page.
+
+## Edit start and Vim (protocol 2.5)
+
+- `doubleClickEdit` true: a document starts not editable. A double-click (not on a check box or a
+  table button) makes it editable with the caret at the click; Escape, a click outside the block
+  of the edit (paragraph, list item, table, code block), leaving the page, or showing another
+  document ends it. Single clicks on check boxes, table buttons and Ctrl/Cmd-click
+  keep working. The IDE `writable` message still wins: a read-only document never becomes editable.
+- `vim` true: the page loads the Vim extension (lazy chunk). `u` and Ctrl-r send the `undo` and
+  `redo` commands. With both settings on, Escape ends the edit only in Normal mode.
+- `vimrc`: key mappings that Kotlin takes from the user's `.ideavimrc` (`map` commands and
+  `let mapleader` only; `<Leader>` is already replaced; empty when `vim` is false). The page clears
+  the old mappings and adds these. Other lines of the file are skipped and listed in Settings.
+
+## Color theme (protocol 2.5)
+
+- `colorTheme` goes to `<html data-md-color-theme>`. `ide` uses the light or dark colors of the IDE
+  theme (`theme.dark`). The other values set their own palette, light or dark, whatever the IDE
+  theme is. An unknown value makes the whole message invalid.
+- The Tokyo Night palettes are ported from https://github.com/tcmmichaelb139/obsidian-tokyonight (MIT).
 
 ## Mode switch sync (protocol 2.4)
 

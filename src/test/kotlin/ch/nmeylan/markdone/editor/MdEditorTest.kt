@@ -509,6 +509,25 @@ class MdEditorTest : BasePlatformTestCase() {
         }
     }
 
+    /** The "open in Edit mode" setting: the provider opens a file in Edit mode, but not one above the limit. */
+    fun testProviderOpensInEditModeWhenSet() {
+        val settings = ch.nmeylan.markdone.settings.MdSettings.getInstance()
+        val provider = MdFileEditorProvider()
+        fun open(text: String): MdEditor {
+            val file = myFixture.addFileToProject("open${System.nanoTime()}.md", text).virtualFile
+            return (provider.createEditor(project, file) as MdEditor).also { it.component; Disposer.register(testRootDisposable, it) }
+        }
+        try {
+            assertEquals(Layout.SHOW_EDITOR, open("a").getLayout())
+            settings.openInEditMode = true
+            assertEquals(Layout.SHOW_PREVIEW, open("a").getLayout())
+            settings.largeFileLimitMb = 1
+            assertEquals(Layout.SHOW_EDITOR, open("x".repeat(2 * 1024 * 1024)).getLayout())
+        } finally {
+            settings.loadState(ch.nmeylan.markdone.settings.MdSettings.SettingsState())
+        }
+    }
+
     /** Above the large-file limit the tab stays in Source mode, Toggle Mode is off, a banner says why. */
     fun testFileAboveTheLimitStaysInSourceWithABanner() {
         val settings = ch.nmeylan.markdone.settings.MdSettings.getInstance()

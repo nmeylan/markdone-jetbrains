@@ -1,5 +1,6 @@
 package ch.nmeylan.markdone.jcef
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.intellij.ide.BrowserUtil
 import com.intellij.ide.DataManager
@@ -42,6 +43,7 @@ import ch.nmeylan.markdone.editor.Perf
 import ch.nmeylan.markdone.editor.WebEditor
 import ch.nmeylan.markdone.settings.MdProjectSettings
 import ch.nmeylan.markdone.settings.MdSettings
+import ch.nmeylan.markdone.settings.VimRc
 import ch.nmeylan.markdone.sync.DocVersion
 import ch.nmeylan.markdone.sync.DocumentSync
 import ch.nmeylan.markdone.sync.LinkKind
@@ -500,6 +502,19 @@ class SharedBrowserService : Disposable {
             addProperty("highlight", settings.highlight)
             addProperty("softBreaks", settings.softBreaks)
             addProperty("style", settings.style.id)
+            addProperty("colorTheme", settings.colorTheme.id)
+            addProperty("doubleClickEdit", settings.doubleClickEdit)
+            addProperty("vim", settings.vim)
+            add("vimrc", JsonArray().also { array ->
+                if (settings.vim) VimRc.load().mappings.forEach {
+                    array.add(JsonObject().apply {
+                        addProperty("mode", it.mode)
+                        addProperty("remap", it.remap)
+                        addProperty("lhs", it.lhs)
+                        addProperty("rhs", it.rhs)
+                    })
+                }
+            })
         }
     }
 

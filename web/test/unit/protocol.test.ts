@@ -20,9 +20,11 @@ describe('validateIdeMessage (protocol v2.4)', () => {
     { type: 'writable', docId: id, writable: false },
     { type: 'theme', dark: true, fontFamily: 'Inter', fontSizePx: 13, zoom: 1 },
     { type: 'css', global: '', project: null },
-    { type: 'settings', remoteImages: true, math: true, mermaid: false, highlight: true, softBreaks: true, style: 'default' },
-    { type: 'settings', remoteImages: false, math: false, mermaid: true, highlight: false, softBreaks: true, style: 'compact' },
-    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'serif' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: false, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
+    { type: 'settings', remoteImages: false, math: false, mermaid: true, highlight: false, softBreaks: true, style: 'compact', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
+    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'serif', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
+    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: true, colorTheme: 'ide', vimrc: [{ mode: 'operator', remap: true, lhs: '<Space>a', rhs: ':w<CR>' }] },
+    { type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'tokyo-storm', vimrc: [] },
   ])('accepts $type', (msg) => {
     expect(validateIdeMessage(msg)).toBe(msg);
   });
@@ -64,14 +66,18 @@ describe('validateIdeMessage (protocol v2.4)', () => {
     { type: 'activate', docId: id, top: 0, scroll: 0 },
     // Settings (2.3): all five fields, exact key set, known style names only.
     { type: 'settings', remoteImages: true },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: true, colorTheme: 'ide', vimrc: [{ mode: 'normal', remap: false, lhs: 'a' }] },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: true, colorTheme: 'ide', vimrc: [{ mode: 'x', remap: false, lhs: 'a', rhs: 'b' }] },
     { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true },
     { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', zoom: 1 },
-    { type: 'settings', remoteImages: true, math: 'yes', mermaid: true, highlight: true, softBreaks: true, style: 'default' },
-    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: 1, softBreaks: true, style: 'default' },
+    { type: 'settings', remoteImages: true, math: 'yes', mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: 1, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] },
     { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'Compact' },
     { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'dark' },
     { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: null },
     { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'toString' },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, colorTheme: 'solarized', vimrc: [] },
+    { type: 'settings', remoteImages: true, math: true, mermaid: true, highlight: true, softBreaks: true, style: 'default', doubleClickEdit: false, vim: false, vimrc: [] },
   ])('rejects %j', (msg) => {
     expect(validateIdeMessage(msg)).toBeNull();
   });

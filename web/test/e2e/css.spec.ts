@@ -112,13 +112,13 @@ test('find panel: IDE font, theme colours, compact; usable with user CSS that hi
     fieldFont: 'Inter, system-ui, sans-serif',
     fieldSize: '13px',
     fieldRadius: '4px',
-    fieldBg: 'rgb(30, 31, 34)',
+    fieldBg: 'rgb(26, 27, 38)',
     buttonSize: '13px',
-    buttonBg: 'rgb(43, 45, 48)',
+    buttonBg: 'rgb(22, 22, 30)',
     buttonImage: 'none',
     labelSize: '13px',
-    panelBg: 'rgb(43, 45, 48)',
-    panelColor: 'rgb(223, 225, 229)',
+    panelBg: 'rgb(22, 22, 30)',
+    panelColor: 'rgb(192, 202, 245)',
   });
   // Compact: two rows (find, replace) of about 28px; the 40px user font and padding do not apply.
   expect(look.panelHeight).toBeLessThan(70);
@@ -247,7 +247,7 @@ for (const [file, name] of [
         await page.evaluate(
           ([s, d]) => {
             window.__harness.send({ type: 'theme', dark: d, fontFamily: 'sans-serif', fontSizePx: 14, zoom: 1 });
-            window.__harness.send({ type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: s });
+            window.__harness.send({ type: 'settings', remoteImages: false, math: true, mermaid: true, highlight: true, softBreaks: true, style: s, doubleClickEdit: false, vim: false, colorTheme: 'ide', vimrc: [] });
           },
           [style, dark] as const,
         );

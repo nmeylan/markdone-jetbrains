@@ -60,6 +60,11 @@ class MdConfigurable(private val project: Project) : BoundConfigurable(DISPLAY_N
                     comboBox(MdStyle.entries, SimpleListCellRenderer.create("") { it.label })
                         .bindItem({ settings.style }, { settings.style = it ?: MdStyle.DEFAULT })
                 }
+                row("Color theme:") {
+                    comboBox(MdColorTheme.entries, SimpleListCellRenderer.create("") { it.label })
+                        .bindItem({ settings.colorTheme }, { settings.colorTheme = it ?: MdColorTheme.IDE })
+                        .comment("Tokyo Night themes: https://github.com/tcmmichaelb139/obsidian-tokyonight")
+                }
                 row("Zoom (%):") {
                     // Integer percent: a double spinner gives values like 1.1000000000000003 (never equal to the setting).
                     spinner(MdSettings.MIN_ZOOM_PERCENT..MdSettings.MAX_ZOOM_PERCENT, MdSettings.ZOOM_STEP_PERCENT)
@@ -77,6 +82,33 @@ class MdConfigurable(private val project: Project) : BoundConfigurable(DISPLAY_N
                 row {
                     checkBox("Soft line breaks").bindSelected(settings::softBreaks)
                         .comment("Shows a single line feed in a paragraph as a line break. Off: as a space.")
+                }
+                row {
+                    checkBox("Open files in Edit mode").bindSelected(settings::openInEditMode)
+                        .comment("Opens a Markdown file in Edit mode instead of Source. A file above the large-file limit opens in Source.")
+                }
+                row {
+                    checkBox("Edit on double-click").bindSelected(settings::doubleClickEdit)
+                        .comment("The page is editable only after a double-click. Escape or leaving the page ends the edit.")
+                }
+                row {
+                    checkBox("Vim key bindings").bindSelected(settings::vim)
+                        .comment("CodeMirror's Vim emulation, not IdeaVim. It takes the key mappings of your .ideavimrc.")
+                }
+                val vimrc = VimRc.load()
+                row {
+                    label(
+                        if (vimrc.source == null) "No .ideavimrc found."
+                        else "${vimrc.source}: ${vimrc.mappings.size} mappings used, ${vimrc.skipped.size} lines skipped."
+                    )
+                }
+                if (vimrc.skipped.isNotEmpty()) {
+                    row {
+                        textArea().rows(4).align(Align.FILL).applyToComponent {
+                            isEditable = false
+                            text = vimrc.skipped.joinToString("\n")
+                        }
+                    }
                 }
                 row {
                     checkBox("Remote images").bindSelected(settings::remoteImages)

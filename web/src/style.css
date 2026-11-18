@@ -35,6 +35,16 @@
     --md-accent: #0969da;
     --md-muted: #59636e;
     --md-heading-fg: #0969da;
+    /* Per-level heading colors, bold and italic text, table header: the themes below set them. */
+    --md-h1-fg: var(--md-heading-fg);
+    --md-h2-fg: var(--md-heading-fg);
+    --md-h3-fg: var(--md-heading-fg);
+    --md-h4-fg: var(--md-heading-fg);
+    --md-h5-fg: var(--md-heading-fg);
+    --md-h6-fg: var(--md-muted);
+    --md-strong-fg: currentColor;
+    --md-em-fg: currentColor;
+    --md-table-header-bg: var(--md-code-bg);
     --md-heading-font: var(--md-font-body);
     --md-heading-weight: 600;
     --md-h1-size: 2em;
@@ -84,6 +94,116 @@
   }
 
   /*
+   * Color themes: `<html data-md-color-theme="ide|tokyo-night|tokyo-storm|tokyo-moon|tokyo-light">`
+   * from `settings`. `ide` (default) uses the light/dark colours above. The Tokyo Night themes are
+   * ported from https://github.com/tcmmichaelb139/obsidian-tokyonight (MIT): each theme sets the
+   * palette (`--tn-*`), and one shared block maps the palette onto the `--md-*` variables.
+   */
+  :root[data-md-color-theme='tokyo-night'],
+  :root[data-md-color-theme='tokyo-storm'],
+  :root[data-md-color-theme='tokyo-moon'] {
+    --tn-bg: #1a1b26;
+    --tn-bg-dark: #16161e;
+    --tn-bg-dark2: #121218;
+    --tn-bg-highlight: #292e42;
+    --tn-bg-highlight-dark: #24283b;
+    --tn-fg: #c0caf5;
+    --tn-fg-dark: #a9b1d6;
+    --tn-comment: #565f89;
+    --tn-blue0: #3d59a1;
+    --tn-blue: #7aa2f7;
+    --tn-cyan: #7dcfff;
+    --tn-magenta: #bb9af7;
+    --tn-orange: #ff9e64;
+    --tn-yellow: #e0af68;
+    --tn-green: #9ece6a;
+    --tn-teal: #1abc9c;
+    --tn-red: #ff757f;
+    --tn-red1: #db4b4b;
+    --tn-accent: hsl(202 100% 75%);
+    --tn-selection: rgb(61 89 161 / 0.6);
+    --tn-match: rgb(255 158 100 / 0.25);
+    --tn-match-selected: rgb(255 158 100 / 0.5);
+    color-scheme: dark;
+  }
+  :root[data-md-color-theme='tokyo-storm'] {
+    --tn-bg: #24283b;
+    --tn-bg-dark: #1f2335;
+    --tn-bg-dark2: #1b1e2d;
+    --tn-bg-highlight-dark: #1f2335;
+  }
+  :root[data-md-color-theme='tokyo-moon'] {
+    --tn-bg: #222436;
+    --tn-bg-dark: #1e2030;
+    --tn-bg-dark2: #191b29;
+    --tn-bg-highlight: #2f334d;
+    --tn-bg-highlight-dark: #1e2030;
+    --tn-fg: #c8d3f5;
+    --tn-fg-dark: #828bb8;
+    --tn-comment: #828bb8;
+    --tn-blue: #82aaff;
+    --tn-cyan: #86e1fc;
+    --tn-magenta: #c099ff;
+    --tn-orange: #ff966c;
+    --tn-yellow: #ffc777;
+    --tn-green: #c3e88d;
+    --tn-red1: #c53b53;
+  }
+  :root[data-md-color-theme='tokyo-light'] {
+    --tn-bg: #d5d6db;
+    --tn-bg-dark: #cbccd1;
+    --tn-bg-dark2: #bcbdc2;
+    --tn-bg-highlight: #dcdee2;
+    --tn-bg-highlight-dark: #c3c5c9;
+    --tn-fg: #343b58;
+    --tn-fg-dark: #272e4b;
+    --tn-comment: #9699a3;
+    --tn-blue0: #27477d;
+    --tn-blue: #34548a;
+    --tn-cyan: #0f4b6e;
+    --tn-magenta: #5a4a78;
+    --tn-orange: #965027;
+    --tn-yellow: #8f5e15;
+    --tn-green: #33635c;
+    --tn-teal: #166775;
+    --tn-red: #8c4351;
+    --tn-red1: #732a38;
+    --tn-accent: hsl(202 86% 43%);
+    --tn-selection: rgb(39 71 125 / 0.3);
+    --tn-match: rgb(150 80 39 / 0.25);
+    --tn-match-selected: rgb(150 80 39 / 0.5);
+    color-scheme: light;
+  }
+  :root:is([data-md-color-theme='tokyo-night'], [data-md-color-theme='tokyo-storm'], [data-md-color-theme='tokyo-moon'], [data-md-color-theme='tokyo-light']) {
+    --md-fg: var(--tn-fg);
+    --md-bg: var(--tn-bg);
+    --md-accent: var(--tn-accent);
+    --md-muted: var(--tn-fg-dark);
+    --md-heading-fg: var(--tn-blue);
+    --md-h1-fg: var(--tn-red);
+    --md-h2-fg: var(--tn-yellow);
+    --md-h3-fg: var(--tn-green);
+    --md-h4-fg: var(--tn-cyan);
+    --md-h5-fg: var(--tn-blue);
+    --md-h6-fg: var(--tn-magenta);
+    --md-strong-fg: var(--tn-cyan);
+    --md-em-fg: var(--tn-cyan);
+    --md-code-bg: var(--tn-bg-highlight-dark);
+    --md-table-header-bg: var(--tn-bg-dark2);
+    --md-border: var(--tn-bg-highlight);
+    --md-link: var(--tn-magenta);
+    --md-marker: var(--tn-comment);
+    --md-error: var(--tn-red1);
+    --md-code-keyword: var(--tn-magenta);
+    --md-code-string: var(--tn-green);
+    --md-code-comment: var(--tn-comment);
+    --md-code-number: var(--tn-orange);
+    --md-code-type: var(--tn-yellow);
+    --md-code-attr: var(--tn-blue);
+    --md-code-meta: var(--tn-teal);
+  }
+
+  /*
    * Built-in styles: `<html data-md-style="default|compact|serif">` from `settings`.
    * Default is the look above. Compact and Serif change only fonts, sizes and spacing, so the light
    * and dark colours above (`:root[data-ide-theme]`) apply to both. User CSS (layer `user`) wins.
@@ -129,28 +249,36 @@
   }
   .md-h1 {
     font-size: var(--md-h1-size);
+    color: var(--md-h1-fg);
   }
   .md-h2 {
     font-size: var(--md-h2-size);
+    color: var(--md-h2-fg);
   }
   .md-h3 {
     font-size: var(--md-h3-size);
+    color: var(--md-h3-fg);
   }
   .md-h4 {
     font-size: var(--md-h4-size);
+    color: var(--md-h4-fg);
   }
   .md-h5 {
     font-size: var(--md-h5-size);
+    color: var(--md-h5-fg);
   }
   .md-h6 {
     font-size: var(--md-h6-size);
+    color: var(--md-h6-fg);
     color: var(--md-muted);
   }
   .md-em {
     font-style: italic;
+    color: var(--md-em-fg);
   }
   .md-strong {
     font-weight: 600;
+    color: var(--md-strong-fg);
   }
   .md-strike {
     text-decoration: line-through;
@@ -173,6 +301,19 @@
   .md-codeblock,
   .md-frontmatter {
     background: var(--md-code-bg);
+  }
+  /*
+   * The editor draws its selection behind the text, and these backgrounds cover it: the browser
+   * selection is shown there instead (also the only selection inside a rendered table).
+   */
+  .md-code ::selection,
+  .md-code::selection,
+  .md-codeblock ::selection,
+  .md-codeblock::selection,
+  .md-frontmatter ::selection,
+  .md-frontmatter::selection,
+  .md-table-wrap ::selection {
+    background-color: var(--md-selection-bg) !important;
   }
   .md-codeblock {
     line-height: var(--md-code-line-height);
@@ -224,6 +365,8 @@
   .md-table-wrap {
     position: relative;
     padding: 20px 26px 12px 24px;
+    max-width: 100%;
+    box-sizing: border-box;
     overflow-x: auto;
   }
   .md-table {
@@ -234,11 +377,10 @@
     position: relative;
     border: 1px solid var(--md-border);
     padding: 4px 10px;
-    white-space: nowrap;
   }
   .md-table th {
     font-weight: 600;
-    background: var(--md-code-bg);
+    background: var(--md-table-header-bg);
   }
 
   /* Math (KaTeX), Mermaid diagrams, code highlighting. */
@@ -368,6 +510,19 @@
     --md-control-bg: #7aa2f7;
     --md-control-remove-bg: #a9b1d6;
     --md-control-fg: #1a1b26;
+  }
+  :root:is([data-md-color-theme='tokyo-night'], [data-md-color-theme='tokyo-storm'], [data-md-color-theme='tokyo-moon'], [data-md-color-theme='tokyo-light']) {
+    --md-selection-bg: var(--tn-selection);
+    --md-panel-bg: var(--tn-bg-dark);
+    --md-panel-fg: var(--tn-fg);
+    --md-panel-border: var(--tn-bg-highlight);
+    --md-panel-hover-bg: var(--tn-bg-highlight);
+    --md-panel-focus: var(--tn-blue);
+    --md-search-match: var(--tn-match);
+    --md-search-match-selected: var(--tn-match-selected);
+    --md-control-bg: var(--tn-accent);
+    --md-control-remove-bg: var(--tn-comment);
+    --md-control-fg: var(--tn-bg);
   }
 
   /*

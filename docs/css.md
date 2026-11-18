@@ -211,3 +211,14 @@ screenshot test `css example` (`web/test/e2e/css.spec.ts`).
   font-style: italic;
 }
 ```
+
+## Color themes
+
+`<html data-md-color-theme>` is `ide` (the colors above), `tokyo-night`, `tokyo-storm`, `tokyo-moon`
+or `tokyo-light`, from the setting "Color theme". The Tokyo Night themes are ported from
+[obsidian-tokyonight](https://github.com/tcmmichaelb139/obsidian-tokyonight) (MIT). Each sets
+`--tn-*` palette variables, which map onto the `--md-*` variables. They also set these variables
+(by default they follow `--md-heading-fg`, `--md-muted` and `--md-code-bg`):
+`--md-h1-fg` … `--md-h6-fg` (heading colors per level), `--md-strong-fg`, `--md-em-fg` (bold and
+italic text) and `--md-table-header-bg`. To change one theme only, use
+`:root[data-md-color-theme="tokyo-night"]` in user CSS.
