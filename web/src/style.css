@@ -369,6 +369,7 @@
   .md-table-wrap {
     position: relative;
     padding: 20px 26px 12px 24px;
+    width: fit-content;
     max-width: 100%;
     box-sizing: border-box;
     overflow-x: auto;
