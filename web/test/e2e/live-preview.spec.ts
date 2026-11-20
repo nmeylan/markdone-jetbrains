@@ -173,6 +173,19 @@ test('table widget: rendered with alignment; hover buttons send tableAction; car
   await expect(btn('addRow', 1)).toBeHidden();
 });
 
+test('table in a list item or a quote: the items and quote lines after the table are decorated', async ({ page, guard }) => {
+  void guard;
+  const table = '| Item | Reference |\n|---|---|\n| one | `lib/a.rs:1-10` |\n| two | `lib/b.rs:2-20` |';
+  const text = `# T\n\n- **Before**: a\n- **Table**:\n  ${table.replace(/\n/g, '\n  ')}\n\n- **After**: b\n\n> **Quote**\n> ${table.replace(/\n/g, '\n> ')}\n>\n> **Quote after**\n\nEnd\n`;
+  await openHarness(page, text);
+  await caret(page, text.length);
+  // Two tables, so the block widgets split the visible ranges inside the list and the quote.
+  await expect(page.locator('.md-table')).toHaveCount(2);
+  await expect(page.locator('.md-bullet')).toHaveCount(3);
+  await expect(page.locator('.md-strong')).toHaveText(['Before', 'Table', 'After', 'Quote', 'Quote after']);
+  await expect(page.locator('.cm-line.md-quote', { hasText: 'Quote after' })).toHaveCount(1);
+});
+
 test('right-click in a table: contextMenu carries table {from, to, row, column} (widget and source)', async ({ page, guard }) => {
   void guard;
   await openHarness(page, TABLE_DOC);

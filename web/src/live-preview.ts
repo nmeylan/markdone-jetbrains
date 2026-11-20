@@ -673,6 +673,9 @@ function marker(reveal: Reveal, from: number, to: number, out: Range<Decoration>
   out.push((hidden ? hide : marks.marker).range(from, to));
 }
 
+/** Nodes that can hold a block widget, so that several visible ranges can share them. */
+const SPLIT_CONTAINERS = new Set(['Document', 'BulletList', 'OrderedList', 'ListItem', 'Blockquote']);
+
 /**
  * `docChanged`: this update changes the document (typing), so code blocks are never sliced,
  * hashed or highlighted in it (heavy/highlight.ts).
@@ -692,9 +695,13 @@ function buildInline(view: EditorView, code: CodeHighlighter, docChanged: boolea
       enter: (ref: SyntaxNodeRef): boolean | undefined => {
         nodes++;
         const { name, from, to } = ref;
-        // Several visible ranges can share a node; decorate each node once.
+        /*
+         * Several visible ranges can share a node; decorate each node once. A container is entered
+         * again: a block widget (a table in a list item) splits it into several ranges, and its
+         * children in the next range need their decorations (its own line decorations are clipped to the range).
+         */
         const key = from * 64 + (ref.type.id % 64);
-        if (name !== 'Document' && seen.has(key)) return false;
+        if (!SPLIT_CONTAINERS.has(name) && seen.has(key)) return false;
         seen.add(key);
         const level = headingLevel(name);
         if (level > 0) {
