@@ -44,6 +44,16 @@ intellijPlatform {
             sinceBuild = properties("pluginSinceBuild")
             untilBuild = provider { null }
         }
+        // Bullets of the current version's section in CHANGELOG.md, as HTML.
+        val pluginVersion = properties("pluginVersion")
+        changeNotes = providers.fileContents(layout.projectDirectory.file("CHANGELOG.md")).asText.map { text ->
+            text.lines()
+                .dropWhile { !it.startsWith("## $pluginVersion ") }
+                .drop(1)
+                .takeWhile { !it.startsWith("## ") }
+                .filter { it.startsWith("- ") }
+                .joinToString("", "<ul>", "</ul>") { "<li>${it.removePrefix("- ")}</li>" }
+        }
     }
 
     /*
